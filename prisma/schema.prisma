@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
+// enough when changing adapters.
+// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model Design {
+  id             String    @id @default(cuid())
+  shop           String
+  designData     String    // JSON string containing images, texts, and layers
+  imageUrl       String    // URL to the complete design image (with frame)
+  emptyCaseUrl   String?   // URL to the empty phone case image
+  designOnlyUrl  String?   // URL to the design elements only (transparent background)
+  orderId        String?   // Shopify order ID when design is purchased
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  @@index([shop])
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+model AppSettings {
+  id          String    @id @default(cuid())
+  shop        String    @unique
+  themeColor  String    @default("#00a8e8") // Primary theme color (default: blue)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([shop])
+}

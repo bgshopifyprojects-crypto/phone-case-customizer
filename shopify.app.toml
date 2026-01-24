@@ -1,0 +1,41 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "5074a2fccebe4fcdfa625aa668e6e172"
+name = "phone-case-customizer"
+application_url = "https://wizard-salary-cure-mate.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  # Note: orders/create webhook requires app approval for protected customer data
+  # For testing, we'll manually check orders or use the Shopify admin API
+  # Uncomment when app is approved for production
+  # [[webhooks.subscriptions]]
+  # topics = [ "orders/create" ]
+  # uri = "/webhooks/orders/create"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products,read_orders,write_orders,write_files"
+
+[app_proxy]
+# App Proxy creates a permanent URL on the store domain
+# Example: https://yourstore.myshopify.com/apps/customizer
+url = "/apps/customizer"
+subpath = "customizer"
+prefix = "apps"
+
+[auth]
+redirect_urls = [ "https://example.com/api/auth" ]

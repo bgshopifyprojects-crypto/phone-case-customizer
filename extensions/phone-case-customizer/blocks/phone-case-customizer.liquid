@@ -1,0 +1,375 @@
+<!-- Phone Case Customizer Block - Using App Proxy -->
+<!-- No need to set SHOPIFY_APP_URL anymore! App Proxy handles routing -->
+
+<div class="phone-case-customizer-wrapper">
+  <!-- Trigger Button -->
+  <button id="customize-phone-case-btn" class="customize-btn">
+    🎨 {{ block.settings.button_text }}
+  </button>
+
+  <!-- Modal Container -->
+  <div id="phone-case-modal" class="phone-case-modal" style="visibility:hidden;opacity:0;">
+    <div class="phone-case-modal-backdrop"></div>
+    <!-- Close button is now created by React component for proper z-index stacking -->
+    <div class="phone-case-modal-content">
+      <div id="phone-case-root" data-frame-url="{{ 'phone-case-frame.png' | asset_url }}" data-designs-url="{{ 'pre-design-images.json' | asset_url }}" data-theme-color="{{ block.settings.theme_color }}" data-product-price="{{ product.selected_or_first_available_variant.price | money }}" data-product-compare-price="{{ product.selected_or_first_available_variant.compare_at_price | money }}"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Fetch admin theme color settings and override block setting
+(function() {
+  const rootElement = document.getElementById('phone-case-root');
+  const settingsUrl = window.location.origin + '/apps/customizer/get-settings';
+  
+  fetch(settingsUrl)
+    .then(response => response.json())
+    .then(data => {
+      if (data.themeColor) {
+        // Override the theme color with admin setting
+        rootElement.setAttribute('data-theme-color', data.themeColor);
+        console.log('Theme color loaded from admin settings:', data.themeColor);
+      }
+    })
+    .catch(error => {
+      console.log('Using default theme color from block settings');
+    });
+})();
+</script>
+
+<!-- Note: Ensure your theme has this meta tag in the <head>:
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+-->
+
+<style>
+  .phone-case-customizer-wrapper {
+    margin: 20px 0;
+  }
+
+  .customize-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .customize-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .customize-btn:active {
+    transform: translateY(0);
+  }
+
+  .phone-case-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 2147483647 !important;
+    transition: opacity 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .phone-case-modal-backdrop {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    backdrop-filter: blur(4px);
+    z-index: 2147483646 !important;
+  }
+
+  .phone-case-modal-content {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0;
+    background: white !important;
+    border-radius: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    z-index: 2147483647 !important;
+  }
+
+  /* Close button is now created by React component - no styles needed here */
+
+  #phone-case-root {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+  }
+  
+  #phone-case-root .phone-case-modal {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #phone-case-root .phone-case-modal .app {
+    width: 100%;
+    height: 100%;
+  }
+  
+  #phone-case-root .phone-case-modal .top-menu {
+    position: relative;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+  
+  #phone-case-root .phone-case-modal .app-content {
+    flex: 1;
+    min-height: 0;
+  }
+</style>
+
+<script>
+(function() {
+  const modal = document.getElementById('phone-case-modal');
+  const btn = document.getElementById('customize-phone-case-btn');
+  const backdrop = document.querySelector('.phone-case-modal-backdrop');
+  
+  let reactMounted = false;
+  let modalMovedToBody = false;
+  
+  // Move modal to body on first open to escape theme container
+  function ensureModalInBody() {
+    if (!modalMovedToBody && modal && modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+      modalMovedToBody = true;
+    }
+  }
+  
+  // Open modal
+  btn.addEventListener('click', function() {
+    ensureModalInBody();
+    modal.style.visibility = 'visible';
+    modal.style.opacity = '1';
+    document.body.style.overflow = 'hidden';
+    
+    // Mount React app on first open
+    if (!reactMounted && window.React && window.ReactDOM) {
+      reactMounted = true;
+      // The phone-customizer.js will auto-mount when the element is visible
+    }
+  });
+  
+  // Close modal function (called by backdrop click)
+  function closeModal() {
+    modal.style.visibility = 'hidden';
+    modal.style.opacity = '0';
+    document.body.style.overflow = '';
+    // Unmount React app
+    const root = document.getElementById('phone-case-root');
+    if (root && window.ReactDOM) {
+      window.ReactDOM.unmountComponentAtNode(root);
+    }
+  }
+  
+  // Close button is now handled by React component
+  backdrop.addEventListener('click', closeModal);
+  
+  // Handle Add to Cart from customizer
+  window.addEventListener('customizer:addToCart', async function(e) {
+    const { designId, imageUrl, emptyCaseUrl, designOnlyUrl } = e.detail;
+    
+    console.log('Add to cart event received:', { designId, imageUrl, emptyCaseUrl, designOnlyUrl });
+    
+    // Get the current product variant ID
+    const variantId = '{{ product.selected_or_first_available_variant.id }}';
+    
+    console.log('Variant ID:', variantId);
+    
+    if (!variantId || variantId === '') {
+      alert('Please select a product variant first.');
+      return;
+    }
+    
+    // Add to Shopify cart
+    const formData = {
+      items: [{
+        id: variantId,
+        quantity: 1,
+        properties: {
+          '_design_id': designId,
+          'main': imageUrl,
+          'image1': emptyCaseUrl,
+          'print-image': designOnlyUrl,
+          'Customized': 'Yes'
+        }
+      }]
+    };
+    
+    console.log('Cart add request:', formData);
+    
+    try {
+      const response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      console.log('Cart add response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Cart add success:', data);
+        
+        closeModal();
+        
+        // Fetch updated cart to get total count
+        fetch('/cart.js')
+          .then(res => res.json())
+          .then(cart => {
+            console.log('Updated cart:', cart);
+            
+            // Method 1: Dispatch multiple cart events (for different theme frameworks)
+            const events = [
+              'cart:refresh',
+              'cart:updated', 
+              'cart:build',
+              'cart.requestComplete',
+              'ajaxCart.afterCartLoad'
+            ];
+            
+            events.forEach(eventName => {
+              document.documentElement.dispatchEvent(new CustomEvent(eventName, {
+                bubbles: true,
+                detail: { cart }
+              }));
+              document.body.dispatchEvent(new CustomEvent(eventName, {
+                bubbles: true,
+                detail: { cart }
+              }));
+              window.dispatchEvent(new CustomEvent(eventName, {
+                detail: { cart }
+              }));
+            });
+            
+            // Method 2: Update cart count manually (multiple selector patterns)
+            const cartCountSelectors = [
+              '.cart-count',
+              '[data-cart-count]',
+              '.cart-link__bubble',
+              '#cart-icon-bubble',
+              '.header__icon--cart .icon__fallback-text',
+              '.cart__count',
+              '.cart-count-bubble',
+              '[data-cart-item-count]',
+              '.js-cart-count'
+            ];
+            
+            cartCountSelectors.forEach(selector => {
+              const elements = document.querySelectorAll(selector);
+              elements.forEach(element => {
+                element.textContent = cart.item_count;
+                if (element.hasAttribute('data-cart-count')) {
+                  element.setAttribute('data-cart-count', cart.item_count);
+                }
+                if (element.hasAttribute('data-cart-item-count')) {
+                  element.setAttribute('data-cart-item-count', cart.item_count);
+                }
+              });
+            });
+            
+            // Method 3: Trigger jQuery events for older themes
+            if (window.jQuery) {
+              window.jQuery(document).trigger('cart.requestComplete', [cart]);
+              window.jQuery(document).trigger('ajaxCart.afterCartLoad', [cart]);
+            }
+            
+            // Method 4: Call theme-specific cart update functions if they exist
+            if (window.theme && typeof window.theme.updateCart === 'function') {
+              window.theme.updateCart(cart);
+            }
+            if (window.Shopify && window.Shopify.updateCart) {
+              window.Shopify.updateCart(cart);
+            }
+            
+            // Method 5: Force reload cart sections (for section rendering themes)
+            if (window.Shopify && window.Shopify.theme && window.Shopify.theme.cart) {
+              window.Shopify.theme.cart.refresh();
+            }
+            
+            // Show success message
+            alert('Customized phone case added to cart!');
+            
+            // FALLBACK: Reload page to show updated cart
+            // This ensures the cart count and cart page are always in sync
+            window.location.reload();
+          })
+          .catch(err => {
+            console.error('Failed to fetch cart:', err);
+            // Still show success since the item was added
+            alert('Customized phone case added to cart!');
+          });
+        
+        // Optional: Open cart drawer if theme supports it
+        // Uncomment one of these if your theme has a cart drawer:
+        // document.querySelector('[data-cart-drawer]')?.click();
+        // document.documentElement.dispatchEvent(new CustomEvent('cart:open'));
+        
+        // Or redirect to cart page:
+        // window.location.href = '/cart';
+      } else {
+        const error = await response.json();
+        console.error('Cart add error:', error);
+        alert('Failed to add to cart: ' + (error.description || error.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      alert('Failed to add to cart. Please try again.');
+    }
+  });
+})();
+</script>
+
+<!-- Load React app directly from theme extension assets -->
+<link rel="stylesheet" href="{{ 'phone-case-customizer.css' | asset_url }}?v=186">
+<script src="{{ 'phone-case-customizer.js' | asset_url }}?v=186" defer></script>
+
+{% schema %}
+{
+  "name": "Phone Case Customizer",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "Customize Your Phone Case"
+    },
+    {
+      "type": "color",
+      "id": "theme_color",
+      "label": "Theme Color",
+      "default": "#00a8e8",
+      "info": "Primary color for buttons and highlights in the customizer"
+    }
+  ]
+}
+{% endschema %}
