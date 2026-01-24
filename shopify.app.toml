@@ -2,7 +2,7 @@
 
 client_id = "5074a2fccebe4fcdfa625aa668e6e172"
 name = "phone-case-customizer"
-application_url = "https://wizard-salary-cure-mate.trycloudflare.com"
+application_url = "https://phone-case-customizer-vfql.onrender.com"
 embedded = true
 
 [build]
@@ -38,4 +38,8 @@ subpath = "customizer"
 prefix = "apps"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [
+  "https://phone-case-customizer-vfql.onrender.com/auth",
+  "https://phone-case-customizer-vfql.onrender.com/auth/callback",
+  "https://phone-case-customizer-vfql.onrender.com/api/auth"
+]
