@@ -33,7 +33,7 @@ scopes = "write_products,read_orders,write_orders,write_files"
 [app_proxy]
 # App Proxy creates a permanent URL on the store domain
 # Example: https://yourstore.myshopify.com/apps/customizer
-url = "/apps/customizer"
+url = "https://phone-case-customizer-vfql.onrender.com/apps/customizer"
 subpath = "customizer"
 prefix = "apps"
 
