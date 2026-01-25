@@ -7,7 +7,7 @@ import QRCode from 'qrcode'
 function App() {
   // Get frame URL and theme color from liquid template data attributes
   const frameUrl = document.getElementById('phone-case-root')?.dataset?.frameUrl || '/phone-case-frame.png'
-  const designsUrl = document.getElementById('phone-case-root')?.dataset?.designsUrl || '/assets/designs.json'
+  const designsUrl = document.getElementById('phone-case-root')?.dataset?.designsUrl || '/pre-design-images.json'
   const initialThemeColor = document.getElementById('phone-case-root')?.dataset?.themeColor || '#00a8e8'
   const productPrice = document.getElementById('phone-case-root')?.dataset?.productPrice || ''
   const productComparePrice = document.getElementById('phone-case-root')?.dataset?.productComparePrice || ''
@@ -178,7 +178,7 @@ function App() {
         )
 
         const distanceRatio = currentDistance / initialDistance
-        const newScale = Math.max(0.1, Math.min(3, initialTransformRef.current.scale * distanceRatio))
+        const newScale = Math.max(0.3, Math.min(2.5, initialTransformRef.current.scale * distanceRatio))
 
         setPlacedImages(prev => prev.map(img => 
           img.id === activeImageId
@@ -195,7 +195,7 @@ function App() {
         )
 
         const distanceRatio = currentDistance / initialDistance
-        const newScale = Math.max(0.1, Math.min(3, initialTransformRef.current.scale * distanceRatio))
+        const newScale = Math.max(0.3, Math.min(2.5, initialTransformRef.current.scale * distanceRatio))
 
         setPlacedTexts(prev => prev.map(text => 
           text.id === activeTextId
@@ -540,19 +540,45 @@ function App() {
 
   const handleImageClick = (image) => {
     setSelectedImage(image)
-    const newPlacedImage = {
-      id: Date.now() + Math.random(),
-      src: image.src,
-      name: image.name,
-      x: 60,
-      y: 220,
-      scale: 1,
-      rotation: 0
+    
+    // Load image to get actual dimensions
+    const img = new Image()
+    img.onload = () => {
+      const maxWidth = 240  // Smaller max width (was 280)
+      const maxHeight = 520 // Smaller max height (was 580)
+      
+      let width = img.width
+      let height = img.height
+      let scale = 1
+      
+      // Calculate scale to fit within phone case if image is too large
+      if (width > maxWidth || height > maxHeight) {
+        const scaleX = maxWidth / width
+        const scaleY = maxHeight / height
+        scale = Math.min(scaleX, scaleY)
+      }
+      
+      // Center position (phone case is 320x640, images now use translate(-50%, -50%))
+      const x = 160  // Center horizontally
+      const y = 320  // Center vertically
+      
+      const newPlacedImage = {
+        id: Date.now() + Math.random(),
+        src: image.src,
+        name: image.name,
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        scale: scale,
+        rotation: 0
+      }
+      setPlacedImages(prev => [...prev, newPlacedImage])
+      setAllLayers(prev => [...prev, { id: newPlacedImage.id, type: 'image' }])
+      setActiveImageId(newPlacedImage.id)
+      setActiveTextId(null)  // Clear active text
     }
-    setPlacedImages(prev => [...prev, newPlacedImage])
-    setAllLayers(prev => [...prev, { id: newPlacedImage.id, type: 'image' }])
-    setActiveImageId(newPlacedImage.id)
-    setActiveTextId(null)  // Clear active text
+    img.src = image.src
   }
 
   const handleDeleteImage = (e, imageId) => {
@@ -626,13 +652,15 @@ function App() {
         }
       })
       
-      // Add QR code as an image
+      // Add QR code as an image (centered like text)
       const newImage = {
         id: Date.now() + Math.random(),
         src: qrDataUrl,
         name: 'QR Code',
-        x: 60,  // Center position (160 - 100/2 = 110, adjusted to 60 for better centering)
-        y: 220,  // Center position (320 - 100/2 = 270, adjusted to 220 for better centering)
+        x: 160,  // Center horizontally (phone case is 320px wide)
+        y: 320,  // Center vertically (phone case is 640px tall)
+        width: 200,
+        height: 200,
         scale: 1,
         rotation: 0
       }
@@ -801,20 +829,44 @@ function App() {
   }
 
   const handleAssetClick = (asset) => {
-    // Use the actual image source
-    const newPlacedImage = {
-      id: Date.now() + Math.random(),
-      src: asset.src,
-      name: asset.name,
-      x: 60,
-      y: 220,
-      scale: 1,
-      rotation: 0
+    // Load image to get actual dimensions
+    const img = new Image()
+    img.onload = () => {
+      const maxWidth = 240  // Smaller max width (was 280)
+      const maxHeight = 520 // Smaller max height (was 580)
+      
+      let width = img.width
+      let height = img.height
+      let scale = 1
+      
+      // Calculate scale to fit within phone case if image is too large
+      if (width > maxWidth || height > maxHeight) {
+        const scaleX = maxWidth / width
+        const scaleY = maxHeight / height
+        scale = Math.min(scaleX, scaleY)
+      }
+      
+      // Center position (phone case is 320x640, images now use translate(-50%, -50%))
+      const x = 160  // Center horizontally
+      const y = 320  // Center vertically
+      
+      const newPlacedImage = {
+        id: Date.now() + Math.random(),
+        src: asset.src,
+        name: asset.name,
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        scale: scale,
+        rotation: 0
+      }
+      setPlacedImages(prev => [...prev, newPlacedImage])
+      setAllLayers(prev => [...prev, { id: newPlacedImage.id, type: 'image' }])
+      setActiveImageId(newPlacedImage.id)
+      setActiveTextId(null)
     }
-    setPlacedImages(prev => [...prev, newPlacedImage])
-    setAllLayers(prev => [...prev, { id: newPlacedImage.id, type: 'image' }])
-    setActiveImageId(newPlacedImage.id)
-    setActiveTextId(null)
+    img.src = asset.src
   }
 
   // Get all layers (images and texts) in order
@@ -1315,7 +1367,7 @@ function App() {
       )
       
       const scaleChange = currentDistance / dragStartRef.current.initialDistance
-      const newScale = Math.max(0.1, Math.min(3, initialTransformRef.current.scale * scaleChange))
+      const newScale = Math.max(0.3, Math.min(2.5, initialTransformRef.current.scale * scaleChange))
       
       if (activeImageId) {
         setPlacedImages(prev => prev.map(img => 
@@ -1771,6 +1823,15 @@ function App() {
         return
       }
 
+      // Hide control buttons temporarily
+      const currentActiveImageId = activeImageId
+      const currentActiveTextId = activeTextId
+      setActiveImageId(null)
+      setActiveTextId(null)
+
+      // Wait for UI to update
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       // Temporarily remove transform for accurate capture on mobile
       const originalTransform = phoneScreen.style.transform
       phoneScreen.style.transform = 'none'
@@ -1785,8 +1846,10 @@ function App() {
         allowTaint: true
       })
 
-      // Restore transform
+      // Restore transform and active states
       phoneScreen.style.transform = originalTransform
+      setActiveImageId(currentActiveImageId)
+      setActiveTextId(currentActiveTextId)
 
       // Final dimensions: 600x1000 (frame size)
       const finalWidth = 600
@@ -1896,6 +1959,15 @@ function App() {
         return
       }
 
+      // Hide control buttons temporarily
+      const currentActiveImageId = activeImageId
+      const currentActiveTextId = activeTextId
+      setActiveImageId(null)
+      setActiveTextId(null)
+
+      // Wait for UI to update
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       // Temporarily remove transform for accurate capture on mobile
       const originalTransform = phoneScreen.style.transform
       phoneScreen.style.transform = 'none'
@@ -1910,8 +1982,10 @@ function App() {
         allowTaint: true
       })
 
-      // Restore transform
+      // Restore transform and active states
       phoneScreen.style.transform = originalTransform
+      setActiveImageId(currentActiveImageId)
+      setActiveTextId(currentActiveTextId)
 
       // Final dimensions: 600x1000 (frame size)
       const finalWidth = 600
@@ -2517,9 +2591,6 @@ function App() {
             </div>
           ) : activeTab === 'text' ? (
             <div className="text-section">
-              <div className="section-header">
-                <h3>Metin Ekle</h3>
-              </div>
               <div className="text-input-container">
                 <textarea
                   className="text-input"
@@ -2544,14 +2615,22 @@ function App() {
                   <p>Henüz katman eklenmedi</p>
                 </div>
               ) : (
-                <div className="layers-list">
-                  {getAllLayers().reverse().map((layer, index) => {
-                    const actualIndex = getAllLayers().length - 1 - index
-                    return (
-                      <div
-                        key={layer.id}
-                        className={`layer-item ${(layer.type === 'image' && activeImageId === layer.id) || (layer.type === 'text' && activeTextId === layer.id) ? 'active' : ''}`}
-                        draggable
+                <>
+                  <div className="layers-hint">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                    <span>Sıralamak için basılı tutun ve sürükleyin</span>
+                  </div>
+                  <div className="layers-list">
+                    {getAllLayers().reverse().map((layer, index) => {
+                      const actualIndex = getAllLayers().length - 1 - index
+                      return (
+                        <div
+                          key={layer.id}
+                          className={`layer-item ${(layer.type === 'image' && activeImageId === layer.id) || (layer.type === 'text' && activeTextId === layer.id) ? 'active' : ''}`}
+                          draggable
                         onDragStart={(e) => handleLayerDragStart(e, actualIndex)}
                         onDragOver={(e) => handleLayerDragOver(e, actualIndex)}
                         onDragEnd={handleLayerDragEnd}
@@ -2583,7 +2662,8 @@ function App() {
                       </div>
                     )
                   })}
-                </div>
+                  </div>
+                </>
               )}
             </div>
           ) : (
@@ -2618,7 +2698,10 @@ function App() {
                     style={{
                       left: `${layer.data.x}px`,
                       top: `${layer.data.y}px`,
-                      transform: `scale(${layer.data.scale}) rotate(${(layer.data.rotation || 0) + (layer.data.transformRotate || 0)}deg)`,
+                      width: `${layer.data.width || 200}px`,
+                      height: `${layer.data.height || 200}px`,
+                      transform: `translate(-50%, -50%) scale(${layer.data.scale}) rotate(${(layer.data.rotation || 0) + (layer.data.transformRotate || 0)}deg)`,
+                      '--parent-scale': layer.data.scale
                     }}
                   >
                     <img
@@ -2681,6 +2764,7 @@ function App() {
                       left: `${layer.data.x}px`,
                       top: `${layer.data.y}px`,
                       transform: `translate(-50%, -50%) scale(${layer.data.scale}) rotate(${(layer.data.rotation || 0) + (layer.data.transformRotate || 0)}deg)`,
+                      '--parent-scale': layer.data.scale
                     }}
                   >
                     <div
@@ -3140,14 +3224,14 @@ function App() {
                           <div 
                             className="color-picker-2d"
                             style={{
-                              background: `linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, hsl(${textColorHue}, 100%, 50%))`
+                              background: `linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,1)), linear-gradient(to right, rgba(255,255,255,1), hsl(${textColorHue}, 100%, 50%))`
                             }}
                             onClick={(e) => {
                               const rect = e.currentTarget.getBoundingClientRect()
                               const x = e.clientX - rect.left
                               const y = e.clientY - rect.top
                               const s = Math.round((x / rect.width) * 100)
-                              const l = Math.round(100 - (y / rect.height) * 100)
+                              const l = Math.round(50 - (y / rect.height) * 50)
                               setTextColorSaturation(s)
                               setTextColorLightness(l)
                               const newColor = hslToHex(textColorHue, s, l)
@@ -3164,7 +3248,7 @@ function App() {
                               className="color-picker-cursor"
                               style={{
                                 left: `${textColorSaturation}%`,
-                                top: `${100 - textColorLightness}%`
+                                top: `${(50 - textColorLightness) * 2}%`
                               }}
                             />
                           </div>
@@ -3256,14 +3340,14 @@ function App() {
                           <div 
                             className="color-picker-2d"
                             style={{
-                              background: `linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, hsl(${textShadowHue}, 100%, 50%))`
+                              background: `linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,1)), linear-gradient(to right, rgba(255,255,255,1), hsl(${textShadowHue}, 100%, 50%))`
                             }}
                             onClick={(e) => {
                               const rect = e.currentTarget.getBoundingClientRect()
                               const x = e.clientX - rect.left
                               const y = e.clientY - rect.top
                               const s = Math.round((x / rect.width) * 100)
-                              const l = Math.round(100 - (y / rect.height) * 100)
+                              const l = Math.round(50 - (y / rect.height) * 50)
                               setTextShadowSaturation(s)
                               setTextShadowLightness(l)
                               const newColor = hslToHex(textShadowHue, s, l)
@@ -3281,7 +3365,7 @@ function App() {
                               className="color-picker-cursor"
                               style={{
                                 left: `${textShadowSaturation}%`,
-                                top: `${100 - textShadowLightness}%`
+                                top: `${(50 - textShadowLightness) * 2}%`
                               }}
                             />
                           </div>
@@ -4135,14 +4219,14 @@ function App() {
                           <div 
                             className="color-picker-2d"
                             style={{
-                              background: `linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, hsl(${shadowHue}, 100%, 50%))`
+                              background: `linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,1)), linear-gradient(to right, rgba(255,255,255,1), hsl(${shadowHue}, 100%, 50%))`
                             }}
                             onClick={(e) => {
                               const rect = e.currentTarget.getBoundingClientRect()
                               const x = e.clientX - rect.left
                               const y = e.clientY - rect.top
                               const s = Math.round((x / rect.width) * 100)
-                              const l = Math.round(100 - (y / rect.height) * 100)
+                              const l = Math.round(50 - (y / rect.height) * 50)
                               setShadowSaturation(s)
                               setShadowLightness(l)
                               const newColor = hslToHex(shadowHue, s, l)
@@ -4160,7 +4244,7 @@ function App() {
                               className="color-picker-cursor"
                               style={{
                                 left: `${shadowSaturation}%`,
-                                top: `${100 - shadowLightness}%`
+                                top: `${(50 - shadowLightness) * 2}%`
                               }}
                             />
                           </div>
@@ -4512,7 +4596,26 @@ function App() {
                         {/* Bring Forward */}
                         <button 
                           className="arrange-btn"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (activeImageId) {
+                              setAllLayers(prev => {
+                                const currentIndex = prev.findIndex(layer => layer.id === activeImageId)
+                                if (currentIndex < prev.length - 1) {
+                                  const newLayers = [...prev]
+                                  const temp = newLayers[currentIndex]
+                                  newLayers[currentIndex] = newLayers[currentIndex + 1]
+                                  newLayers[currentIndex + 1] = temp
+                                  return newLayers
+                                }
+                                return prev
+                              })
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             if (activeImageId) {
                               setAllLayers(prev => {
                                 const currentIndex = prev.findIndex(layer => layer.id === activeImageId)
@@ -4539,7 +4642,26 @@ function App() {
                         {/* Send Backward */}
                         <button 
                           className="arrange-btn"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (activeImageId) {
+                              setAllLayers(prev => {
+                                const currentIndex = prev.findIndex(layer => layer.id === activeImageId)
+                                if (currentIndex > 0) {
+                                  const newLayers = [...prev]
+                                  const temp = newLayers[currentIndex]
+                                  newLayers[currentIndex] = newLayers[currentIndex - 1]
+                                  newLayers[currentIndex - 1] = temp
+                                  return newLayers
+                                }
+                                return prev
+                              })
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             if (activeImageId) {
                               setAllLayers(prev => {
                                 const currentIndex = prev.findIndex(layer => layer.id === activeImageId)

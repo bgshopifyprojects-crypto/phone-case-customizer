@@ -61,7 +61,8 @@
 
 .phone-case-modal .app {
   width: 100%;
-  min-height: 100%;
+  min-height: 100vh;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -279,25 +280,17 @@
     font-size: 0.875rem;
     padding: 0.5rem;
     min-width: 44px;
+    min-height: 44px;
   }
   
-  /* Hide "Sepete Ekle" text on mobile, keep only icon and price */
-  .phone-case-modal .add-to-cart-btn .cart-label {
+  /* Hide all text on mobile - icon only */
+  .phone-case-modal .add-to-cart-btn .add-to-cart-text {
     display: none;
   }
   
-  .phone-case-modal .add-to-cart-btn .cart-price {
-    font-size: 0.875rem;
-    font-weight: 600;
-  }
-  
-  .phone-case-modal .add-to-cart-btn .cart-price .compare-price {
-    font-size: 0.75rem;
-  }
-  
-  /* Adjust text container alignment when label is hidden */
-  .phone-case-modal .add-to-cart-btn .add-to-cart-text {
-    align-items: center;
+  .phone-case-modal .add-to-cart-btn svg {
+    width: 32px;
+    height: 32px;
   }
 }
 
@@ -308,21 +301,9 @@
   .phone-case-modal .preview-btn,
   .phone-case-modal .undo-btn,
   .phone-case-modal .redo-btn {
-    padding: 0.375rem;
+    padding: 0.5rem;
     min-width: 44px;
     gap: 0.25rem;
-  }
-  
-  .phone-case-modal .add-to-cart-btn .cart-label {
-    font-size: 0.6875rem;
-  }
-  
-  .phone-case-modal .add-to-cart-btn .cart-price {
-    font-size: 0.75rem;
-  }
-  
-  .phone-case-modal .add-to-cart-btn .cart-price .compare-price {
-    display: none; /* Hide compare price on very small screens */
   }
   
   /* Hide text on very small screens, show only icons */
@@ -332,15 +313,20 @@
     display: none;
   }
   
-  /* Keep add-to-cart text visible but smaller */
-  .phone-case-modal .add-to-cart-btn .add-to-cart-text {
-    display: flex;
+  /* Cart button - icon only */
+  .phone-case-modal .add-to-cart-btn {
+    padding: 0.5rem;
+    min-width: 48px;
+    min-height: 48px;
   }
   
-  .phone-case-modal .add-to-cart-btn {
-    padding: 0.375rem;
-    min-width: 44px;
-    gap: 0.25rem;
+  .phone-case-modal .add-to-cart-btn .add-to-cart-text {
+    display: none;
+  }
+  
+  .phone-case-modal .add-to-cart-btn svg {
+    width: 32px;
+    height: 32px;
   }
 }
 
@@ -466,15 +452,28 @@
 /* Phone Case Section */
 .phone-section {
   background: #f5f5f5;
-  padding: 2rem; /* 32px on desktop */
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 100%;
-  overflow: visible;
+  justify-content: flex-start;
+  overflow-y: auto;
   flex: 1;
+  max-height: 100vh;
+  min-height: 0;
   box-sizing: border-box;
+}
+
+.phone-case {
+  position: relative;
+  width: 340px;
+  height: 660px;
+  background: #ff8c69;
+  border-radius: 50px;
+  padding: 0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 /* Responsive padding */
@@ -488,17 +487,6 @@
   .phone-section {
     padding: 0.5rem; /* 8px on small phones */
   }
-}
-
-.phone-case {
-  position: relative;
-  width: 320px;
-  height: 640px;
-  background: #ff8c69;
-  border-radius: 50px;
-  padding: 0;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  overflow: visible;
 }
 
 .phone-case-frame {
@@ -550,8 +538,7 @@
 
 .placed-image-wrapper {
   position: absolute;
-  width: 200px;
-  height: 200px;
+  /* Width and height set dynamically via inline styles based on actual image dimensions */
   user-select: none;
   transition: left 0.1s ease-out, top 0.1s ease-out;
   border: 2px dashed transparent;
@@ -582,16 +569,16 @@
   position: absolute;
   top: -34px;
   right: -34px;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   padding: 0;
   border: none;
   border-radius: 6px;
   background: rgba(128, 128, 128, 0.7);
   color: white;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -603,32 +590,33 @@
   backdrop-filter: blur(4px);
   box-sizing: border-box;
   touch-action: manipulation;
+  transform: scale(calc(1 / var(--parent-scale, 1)));
+  transform-origin: center;
 }
 
 .image-delete-btn:hover {
   background: rgba(100, 100, 100, 0.9);
-  transform: scale(1.1);
+  transform: scale(calc(1.1 / var(--parent-scale, 1)));
 }
 
 .image-delete-btn:active {
   background: rgba(80, 80, 80, 1);
-  transform: scale(1.05);
+  transform: scale(calc(1.05 / var(--parent-scale, 1)));
 }
 
 .image-rotate-handle {
   position: absolute;
   bottom: -46px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   border: none;
   border-radius: 6px;
   background: rgba(128, 128, 128, 0.7);
   color: white;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   cursor: crosshair;
   display: flex;
   align-items: center;
@@ -638,32 +626,34 @@
   z-index: 1000;
   backdrop-filter: blur(4px);
   touch-action: none;
+  transform: translateX(-50%) scale(calc(1 / var(--parent-scale, 1)));
+  transform-origin: center;
 }
 
 .image-rotate-handle:hover {
   background: rgba(100, 100, 100, 0.9);
-  transform: translateX(-50%) scale(1.1);
+  transform: translateX(-50%) scale(calc(1.1 / var(--parent-scale, 1)));
 }
 
 .image-rotate-handle:active {
   cursor: crosshair;
   background: rgba(80, 80, 80, 1);
-  transform: translateX(-50%) scale(1.05);
+  transform: translateX(-50%) scale(calc(1.05 / var(--parent-scale, 1)));
 }
 
 .image-resize-handle {
   position: absolute;
   bottom: -34px;
   right: -34px;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
   border: none;
   border-radius: 6px;
   background: rgba(128, 128, 128, 0.7);
   color: white;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   cursor: nwse-resize;
   display: flex;
   align-items: center;
@@ -673,16 +663,18 @@
   z-index: 1000;
   backdrop-filter: blur(4px);
   touch-action: none;
+  transform: scale(calc(1 / var(--parent-scale, 1)));
+  transform-origin: center;
 }
 
 .image-resize-handle:hover {
   background: rgba(100, 100, 100, 0.9);
-  transform: scale(1.1);
+  transform: scale(calc(1.1 / var(--parent-scale, 1)));
 }
 
 .image-resize-handle:active {
   background: rgba(80, 80, 80, 1);
-  transform: scale(1.05);
+  transform: scale(calc(1.05 / var(--parent-scale, 1)));
   cursor: nwse-resize;
 }
 
@@ -784,6 +776,7 @@
   height: 36px;
   min-width: 36px;
   border: none;
+  outline: none;
   border-radius: 6px;
   background: white;
   color: #666;
@@ -791,6 +784,11 @@
   transition: all 0.2s;
   flex-shrink: 0;
   margin-left: auto;
+}
+
+.panel-close-btn:focus {
+  outline: none;
+  border: none;
 }
 
 .panel-close-btn:hover {
@@ -974,7 +972,7 @@
     display: flex;
     flex-direction: row; /* Horizontal on mobile */
     gap: 0.5rem;
-    justify-content: space-between;
+    justify-content: flex-start;
     flex-wrap: wrap; /* Allow wrapping on mobile */
     background: white; /* White background for content area */
     padding: 0.75rem; /* Add padding */
@@ -982,9 +980,9 @@
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); /* Shadow for depth */
   }
   
-  /* Hide text labels on mobile - icons only */
+  /* Show text labels on mobile */
   .text-edit-icon-btn span {
-    display: none;
+    display: block;
   }
 }
 
@@ -1010,14 +1008,14 @@
 @media (max-width: 767px) {
   .text-edit-icon-btn {
     flex-direction: column; /* Column layout on mobile */
-    flex: 1;
+    flex: 0 0 auto;
     min-width: 0;
-    max-width: calc(20% - 0.4rem); /* 5 columns on mobile */
+    max-width: calc(20% - 0.4rem); /* 5 columns on mobile = 2 rows for 9 buttons (5+4) */
     min-height: 44px;
-    width: auto;
+    width: calc(20% - 0.4rem);
     justify-content: center;
     gap: 0.25rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.5rem 0.25rem;
   }
 }
 
@@ -1265,16 +1263,18 @@
 /* Mobile: Adjust grid */
 @media (max-width: 767px) {
   .format-buttons-grid {
-    display: flex; /* Change to flex for single row */
+    display: flex;
     flex-direction: row;
-    gap: 0.25rem; /* Reduced gap */
-    flex-wrap: nowrap; /* Keep all on same line */
+    gap: 0.5rem; /* Same gap for both rows and columns */
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
   
   .format-btn-square {
-    flex: 1; /* Equal width */
-    min-height: 32px; /* Much smaller - 20px + padding */
-    max-height: 32px;
+    flex: 0 0 auto;
+    width: calc(25% - 0.375rem); /* 4 buttons per row */
+    min-height: 48px;
+    max-height: 48px;
     padding: 0.25rem; /* Minimal padding */
     min-width: 32px;
   }
@@ -1377,6 +1377,10 @@
   resize: vertical;
   min-height: 42px;
   line-height: 1.5;
+  color: #333;
+  background-color: white;
+  -webkit-appearance: none;
+  -webkit-text-fill-color: #333;
 }
 
 /* Mobile: Same size */
@@ -1482,9 +1486,9 @@
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); /* Shadow for depth */
   }
   
-  /* Hide text labels on mobile - icons only */
+  /* Show text labels on mobile */
   .image-edit-icon-btn span {
-    display: none;
+    display: block;
   }
 }
 
@@ -1796,6 +1800,8 @@
   color: #333;
   font-size: 0.875rem;
   outline: none;
+  -webkit-appearance: none;
+  -webkit-text-fill-color: #333;
 }
 
 /* Mobile: Make size value input more compact */
@@ -1957,6 +1963,9 @@
   font-family: monospace;
   text-transform: lowercase;
   background: white;
+  color: #333;
+  -webkit-appearance: none;
+  -webkit-text-fill-color: #333;
 }
 
 .hex-input:focus {
@@ -2236,6 +2245,7 @@
   cursor: pointer;
   transition: all 0.2s;
   min-height: 60px;
+  touch-action: manipulation;
 }
 
 .arrange-btn:hover {
@@ -2270,6 +2280,10 @@
   margin-bottom: 1rem;
   box-sizing: border-box;
   line-height: 1.5;
+  color: #333;
+  background-color: white;
+  -webkit-appearance: none;
+  -webkit-text-fill-color: #333;
 }
 
 .text-input:focus {
@@ -2350,8 +2364,7 @@
   background: #f5f5f5;
   padding: 0;
   width: 380px;
-  height: 100%;
-  overflow-y: auto;
+  max-height: 100vh;
   box-sizing: border-box;
   border-right: 1px solid #e0e0e0;
   display: flex;
@@ -2373,9 +2386,11 @@
   background: white;
   padding: 2rem; /* 32px on desktop */
   flex: 1;
-  overflow-x: scroll; /* Changed from auto to scroll to always show scrollbar */
-  overflow-y: visible;
+  overflow-x: auto;
+  overflow-y: auto;
   min-width: 0;
+  min-height: 0;
+  max-height: 100%;
 }
 
 /* Responsive padding for upload section */
@@ -3067,10 +3082,49 @@
   align-items: center;
   color: #999;
   cursor: grab;
+  padding: 0.5rem;
+  margin: -0.5rem;
+  touch-action: none;
 }
 
 .layer-drag-handle:active {
   cursor: grabbing;
+}
+
+/* Layers hint */
+.layers-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f0f7ff;
+  border: 1px solid #d0e7ff;
+  border-radius: 6px;
+  color: #0066cc;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.layers-hint svg {
+  flex-shrink: 0;
+}
+
+/* Mobile: Make drag handle larger and more prominent */
+@media (max-width: 767px) {
+  .layer-drag-handle {
+    padding: 1rem;
+    margin: -1rem -0.5rem -1rem -1rem;
+  }
+  
+  .layer-drag-handle svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .layers-hint {
+    font-size: 0.8125rem;
+    padding: 0.625rem 0.875rem;
+  }
 }
 
 .layer-preview {
@@ -3510,7 +3564,8 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: white;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
   z-index: 10000;
   display: flex;
   align-items: center;
@@ -3519,19 +3574,19 @@
 }
 
 .preview-modal-close {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 44px;
-  height: 44px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   color: white;
   border: none;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: bold;
   cursor: pointer;
-  z-index: 10001;
+  z-index: 10002;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3540,13 +3595,17 @@
 }
 
 .preview-modal-close:hover {
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   transform: scale(1.1);
 }
 
 .preview-modal-content {
-  width: 100%;
-  height: 100%;
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3563,28 +3622,22 @@
 
 .preview-image-container img {
   max-width: 100%;
-  max-height: 100%;
+  max-height: calc(90vh - 4rem);
   object-fit: contain;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
 }
 
 @media (max-width: 767px) {
-  .preview-modal-close {
-    top: 10px;
-    right: 10px;
-    width: 40px;
-    height: 40px;
-    font-size: 24px;
-  }
-  
   .preview-modal-content {
-    padding: 0.5rem;
+    max-width: 95vw;
+    max-height: 95vh;
+    padding: 1rem;
   }
   
-  .preview-image-container {
-    width: 100%;
-    height: 100%;
+  .preview-image-container img {
+    max-height: calc(95vh - 2rem);
   }
+}
   
   .preview-image-container img {
     width: 100%;
@@ -3613,6 +3666,10 @@
   font-family: inherit;
   resize: vertical;
   min-height: 100px;
+  color: #333;
+  background-color: white;
+  -webkit-appearance: none;
+  -webkit-text-fill-color: #333;
 }
 
 .text-input:focus {
@@ -3740,6 +3797,10 @@
   font-family: inherit;
   resize: vertical;
   min-height: 80px;
+  color: #333;
+  background-color: white;
+  -webkit-appearance: none;
+  -webkit-text-fill-color: #333;
 }
 
 .qr-input:focus {
@@ -3802,6 +3863,10 @@
   border-radius: 8px;
   font-size: 0.9rem;
   font-family: monospace;
+  color: #333;
+  background-color: white;
+  -webkit-appearance: none;
+  -webkit-text-fill-color: #333;
 }
 
 .qr-color-input:focus {

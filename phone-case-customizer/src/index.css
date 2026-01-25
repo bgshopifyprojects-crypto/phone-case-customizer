@@ -28,6 +28,15 @@ body {
   min-height: 100vh;
 }
 
+html, body, #root {
+  height: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
