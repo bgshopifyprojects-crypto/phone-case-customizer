@@ -1,5 +1,5 @@
 /**
- * Health check endpoint for Fly.io
+ * Health check endpoint for Render
  * GET /healthz
  */
 export async function loader() {
