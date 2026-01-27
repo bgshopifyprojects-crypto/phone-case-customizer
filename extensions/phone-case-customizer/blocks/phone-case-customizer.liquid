@@ -10,7 +10,13 @@
   <!-- Modal Container -->
   <div id="phone-case-modal" class="phone-case-modal" style="visibility:hidden;opacity:0;">
     <!-- Close button is now created by React component for proper z-index stacking -->
-    <div id="phone-case-root" data-frame-url="{{ 'phone-case-frame.png' | asset_url }}" data-designs-url="{{ 'pre-design-images.json' | asset_url }}" data-theme-color="{{ block.settings.theme_color }}" data-product-price="{{ product.selected_or_first_available_variant.price | money }}" data-product-compare-price="{{ product.selected_or_first_available_variant.compare_at_price | money }}"></div>
+    <div id="phone-case-root" 
+         data-frame-url="{{ 'phone-case-frame.png' | asset_url }}" 
+         data-phone-case-url="{{ 'phone-case.png' | asset_url }}"
+         data-designs-url="{{ 'pre-design-images.json' | asset_url }}" 
+         data-theme-color="{{ block.settings.theme_color }}" 
+         data-product-price="{{ product.selected_or_first_available_variant.price | money }}" 
+         data-product-compare-price="{{ product.selected_or_first_available_variant.compare_at_price | money }}"></div>
   </div>
 </div>
 
@@ -160,11 +166,13 @@
         quantity: 1,
         properties: {
           '_design_id': designId,
-          'main': imageUrl,
-          'image1': emptyCaseUrl,
-          'print-image': designOnlyUrl,
+          '_main': imageUrl,
+          '_image1': emptyCaseUrl,
+          '_print-image': designOnlyUrl,
           'Customized': 'Yes'
-        }
+        },
+        // Set the custom image as the line item image
+        image: imageUrl
       }]
     };
     
@@ -185,100 +193,8 @@
         
         closeModal();
         
-        // Fetch updated cart to get total count
-        fetch('/cart.js')
-          .then(res => res.json())
-          .then(cart => {
-            console.log('Updated cart:', cart);
-            
-            // Method 1: Dispatch multiple cart events (for different theme frameworks)
-            const events = [
-              'cart:refresh',
-              'cart:updated', 
-              'cart:build',
-              'cart.requestComplete',
-              'ajaxCart.afterCartLoad'
-            ];
-            
-            events.forEach(eventName => {
-              document.documentElement.dispatchEvent(new CustomEvent(eventName, {
-                bubbles: true,
-                detail: { cart }
-              }));
-              document.body.dispatchEvent(new CustomEvent(eventName, {
-                bubbles: true,
-                detail: { cart }
-              }));
-              window.dispatchEvent(new CustomEvent(eventName, {
-                detail: { cart }
-              }));
-            });
-            
-            // Method 2: Update cart count manually (multiple selector patterns)
-            const cartCountSelectors = [
-              '.cart-count',
-              '[data-cart-count]',
-              '.cart-link__bubble',
-              '#cart-icon-bubble',
-              '.header__icon--cart .icon__fallback-text',
-              '.cart__count',
-              '.cart-count-bubble',
-              '[data-cart-item-count]',
-              '.js-cart-count'
-            ];
-            
-            cartCountSelectors.forEach(selector => {
-              const elements = document.querySelectorAll(selector);
-              elements.forEach(element => {
-                element.textContent = cart.item_count;
-                if (element.hasAttribute('data-cart-count')) {
-                  element.setAttribute('data-cart-count', cart.item_count);
-                }
-                if (element.hasAttribute('data-cart-item-count')) {
-                  element.setAttribute('data-cart-item-count', cart.item_count);
-                }
-              });
-            });
-            
-            // Method 3: Trigger jQuery events for older themes
-            if (window.jQuery) {
-              window.jQuery(document).trigger('cart.requestComplete', [cart]);
-              window.jQuery(document).trigger('ajaxCart.afterCartLoad', [cart]);
-            }
-            
-            // Method 4: Call theme-specific cart update functions if they exist
-            if (window.theme && typeof window.theme.updateCart === 'function') {
-              window.theme.updateCart(cart);
-            }
-            if (window.Shopify && window.Shopify.updateCart) {
-              window.Shopify.updateCart(cart);
-            }
-            
-            // Method 5: Force reload cart sections (for section rendering themes)
-            if (window.Shopify && window.Shopify.theme && window.Shopify.theme.cart) {
-              window.Shopify.theme.cart.refresh();
-            }
-            
-            // Show success message
-            alert('Customized phone case added to cart!');
-            
-            // FALLBACK: Reload page to show updated cart
-            // This ensures the cart count and cart page are always in sync
-            window.location.reload();
-          })
-          .catch(err => {
-            console.error('Failed to fetch cart:', err);
-            // Still show success since the item was added
-            alert('Customized phone case added to cart!');
-          });
-        
-        // Optional: Open cart drawer if theme supports it
-        // Uncomment one of these if your theme has a cart drawer:
-        // document.querySelector('[data-cart-drawer]')?.click();
-        // document.documentElement.dispatchEvent(new CustomEvent('cart:open'));
-        
-        // Or redirect to cart page:
-        // window.location.href = '/cart';
+        // Redirect to cart page
+        window.location.href = '/cart';
       } else {
         const error = await response.json();
         console.error('Cart add error:', error);
@@ -289,6 +205,77 @@
       alert('Failed to add to cart. Please try again.');
     }
   });
+  
+  // Function to replace cart item images with custom design images
+  function replaceCartImages() {
+    console.log('Attempting to replace cart images...');
+    
+    // Fetch cart data
+    fetch('/cart.js')
+      .then(res => res.json())
+      .then(cart => {
+        console.log('Cart data:', cart);
+        
+        // Find all cart item images
+        const allImages = document.querySelectorAll('img');
+        
+        cart.items.forEach((item, itemIndex) => {
+          // Check if item has custom image property
+          const customImageUrl = item.properties?._main || item.properties?.main;
+          
+          if (customImageUrl) {
+            console.log(`Item ${itemIndex} has custom image:`, customImageUrl);
+            
+            // Try to find the image by matching the product title or variant ID in nearby text
+            allImages.forEach(img => {
+              // Check if this image is in a cart item container
+              const cartItem = img.closest('.cart-item, .cart__item, [data-cart-item], .line-item, cart-item, tr');
+              
+              if (cartItem) {
+                // Check if this cart item contains the product title or variant ID
+                const itemText = cartItem.textContent || '';
+                const itemHTML = cartItem.innerHTML || '';
+                
+                // Match by variant ID or product title
+                if (itemHTML.includes(item.variant_id) || itemHTML.includes(item.id) || 
+                    itemText.includes(item.product_title) || itemText.includes(item.title)) {
+                  
+                  console.log('Found matching cart item, replacing image');
+                  img.src = customImageUrl;
+                  img.srcset = customImageUrl;
+                  
+                  // Also update parent picture element if exists
+                  const picture = img.closest('picture');
+                  if (picture) {
+                    const sources = picture.querySelectorAll('source');
+                    sources.forEach(source => {
+                      source.srcset = customImageUrl;
+                    });
+                  }
+                }
+              }
+            });
+          }
+        });
+      })
+      .catch(err => console.error('Failed to replace cart images:', err));
+  }
+  
+  // Replace images when cart is updated
+  window.addEventListener('cart:updated', replaceCartImages);
+  window.addEventListener('cart:refresh', replaceCartImages);
+  document.addEventListener('cart:updated', replaceCartImages);
+  document.addEventListener('cart:refresh', replaceCartImages);
+  document.addEventListener('DOMContentLoaded', replaceCartImages);
+  
+  // Also replace on page load if on cart page
+  if (window.location.pathname === '/cart') {
+    // Run multiple times to catch dynamic content
+    replaceCartImages();
+    setTimeout(replaceCartImages, 500);
+    setTimeout(replaceCartImages, 1000);
+    setTimeout(replaceCartImages, 2000);
+  }
 })();
 </script>
 

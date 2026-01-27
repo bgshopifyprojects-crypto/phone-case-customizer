@@ -7,6 +7,7 @@ import QRCode from 'qrcode'
 function App() {
   // Get frame URL and theme color from liquid template data attributes
   const frameUrl = document.getElementById('phone-case-root')?.dataset?.frameUrl || '/phone-case-frame.png'
+  const phoneCaseUrl = document.getElementById('phone-case-root')?.dataset?.phoneCaseUrl || '/phone-case.png'
   const designsUrl = document.getElementById('phone-case-root')?.dataset?.designsUrl || '/pre-design-images.json'
   const initialThemeColor = document.getElementById('phone-case-root')?.dataset?.themeColor || '#00a8e8'
   const productPrice = document.getElementById('phone-case-root')?.dataset?.productPrice || ''
@@ -31,9 +32,6 @@ function App() {
         console.log('Using default theme color from block settings', error)
       })
   }, [])
-  
-  // Extract base asset URL from frameUrl (e.g., "https://cdn.shopify.com/.../assets/")
-  const baseAssetUrl = frameUrl.substring(0, frameUrl.lastIndexOf('/') + 1)
   
   // Apply theme color as CSS variable
   useEffect(() => {
@@ -62,6 +60,14 @@ function App() {
       document.documentElement.style.setProperty('--theme-color-dark', `rgb(${darkerR}, ${darkerG}, ${darkerB})`)
     }
   }, [themeColor])
+
+  // Set phone-screen background image dynamically
+  useEffect(() => {
+    const phoneScreen = document.querySelector('.phone-screen')
+    if (phoneScreen) {
+      phoneScreen.style.backgroundImage = `url('${phoneCaseUrl}')`
+    }
+  }, [phoneCaseUrl])
   const [uploadedImages, setUploadedImages] = useState([])
   const [selectedImage, setSelectedImage] = useState(null)
   const [placedImages, setPlacedImages] = useState([])
@@ -106,6 +112,7 @@ function App() {
   const [previewImageUrl, setPreviewImageUrl] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  const [isCapturing, setIsCapturing] = useState(false)
   const [uploadDrawerOpen, setUploadDrawerOpen] = useState(false)
   const [isMultiTouch, setIsMultiTouch] = useState(false)
   const [imageEditMode, setImageEditMode] = useState('main') // 'main', 'color', 'transform', 'position', 'reset'
@@ -126,6 +133,7 @@ function App() {
   const [panelPosition, setPanelPosition] = useState({ x: null, y: null }) // null means use default CSS position
   const [isDraggingPanel, setIsDraggingPanel] = useState(false)
   const [panelDragStart, setPanelDragStart] = useState({ x: 0, y: 0 })
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const panelRef = useRef(null)
   const dragStartRef = useRef({ x: 0, y: 0 })
   const initialTransformRef = useRef(null)
@@ -178,7 +186,7 @@ function App() {
         )
 
         const distanceRatio = currentDistance / initialDistance
-        const newScale = Math.max(0.3, Math.min(2.5, initialTransformRef.current.scale * distanceRatio))
+        const newScale = Math.max(0.05, Math.min(2.5, initialTransformRef.current.scale * distanceRatio))
 
         setPlacedImages(prev => prev.map(img => 
           img.id === activeImageId
@@ -195,7 +203,7 @@ function App() {
         )
 
         const distanceRatio = currentDistance / initialDistance
-        const newScale = Math.max(0.3, Math.min(2.5, initialTransformRef.current.scale * distanceRatio))
+        const newScale = Math.max(0.05, Math.min(2.5, initialTransformRef.current.scale * distanceRatio))
 
         setPlacedTexts(prev => prev.map(text => 
           text.id === activeTextId
@@ -401,6 +409,31 @@ function App() {
     setPanelPosition({ x: null, y: null })
   }, [activeImageId, activeTextId])
 
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    if (!showMobileMenu) return
+
+    const handleClickOutside = (e) => {
+      // Check if click is outside the mobile menu and hamburger button
+      const mobileMenu = document.querySelector('.mobile-menu-dropdown')
+      const hamburgerBtn = document.querySelector('.hamburger-menu-btn')
+      
+      if (mobileMenu && hamburgerBtn && 
+          !mobileMenu.contains(e.target) && 
+          !hamburgerBtn.contains(e.target)) {
+        setShowMobileMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [showMobileMenu])
+
   // Load assets from designs.json
   useEffect(() => {
     fetch(designsUrl)
@@ -425,6 +458,19 @@ function App() {
       })
       .catch(err => console.error('Failed to load assets:', err))
   }, [designsUrl])
+
+  // Pre-load images for faster capture
+  useEffect(() => {
+    const preloadImages = () => {
+      const phoneCaseImg = new Image()
+      phoneCaseImg.src = phoneCaseUrl
+      
+      const frameImg = new Image()
+      frameImg.src = frameUrl
+    }
+    
+    preloadImages()
+  }, [frameUrl, phoneCaseUrl])
 
   // Helper functions for color conversion
   const hslToHex = (h, s, l) => {
@@ -577,6 +623,7 @@ function App() {
       setAllLayers(prev => [...prev, { id: newPlacedImage.id, type: 'image' }])
       setActiveImageId(newPlacedImage.id)
       setActiveTextId(null)  // Clear active text
+      setUploadDrawerOpen(false)  // Close drawer on mobile
     }
     img.src = image.src
   }
@@ -632,6 +679,7 @@ function App() {
     setActiveTextId(newText.id)
     setActiveImageId(null)  // Clear active image
     setTextInput('')
+    setUploadDrawerOpen(false)  // Close drawer on mobile
     
     // Save to history after adding text (debounced internally)
     saveToHistory()
@@ -670,6 +718,7 @@ function App() {
       setActiveImageId(newImage.id)
       setActiveTextId(null)
       setQrInput('') // Clear input after adding
+      setUploadDrawerOpen(false)  // Close drawer on mobile
       
       // Save to history after adding QR code (debounced internally)
       saveToHistory()
@@ -865,6 +914,7 @@ function App() {
       setAllLayers(prev => [...prev, { id: newPlacedImage.id, type: 'image' }])
       setActiveImageId(newPlacedImage.id)
       setActiveTextId(null)
+      setUploadDrawerOpen(false)  // Close drawer on mobile
     }
     img.src = asset.src
   }
@@ -947,6 +997,11 @@ function App() {
 
   const handleDownload = async (format) => {
     try {
+      setIsCapturing(true) // Show loading overlay
+      
+      // Wait for loading overlay to render
+      await new Promise(resolve => setTimeout(resolve, 50))
+
       // Get elements
       const phoneScreen = document.querySelector('.phone-screen')
       const phoneFrameImg = document.querySelector('.phone-case-frame img')
@@ -960,16 +1015,19 @@ function App() {
       setActiveImageId(null)
       setActiveTextId(null)
 
+      // Wait for UI to update (hide controls)
+      await new Promise(resolve => setTimeout(resolve, 50))
+
       // Temporarily remove transform for accurate capture on mobile
       const originalTransform = phoneScreen.style.transform
       phoneScreen.style.transform = 'none'
 
-      // Wait a bit for the UI to update
-      await new Promise(resolve => setTimeout(resolve, 200))
+      // Wait for transform removal to take effect
+      await new Promise(resolve => setTimeout(resolve, 100))
 
-      // Capture the phone screen with html2canvas
+      // Capture the phone screen with html2canvas (transparent background)
       const screenCanvas = await html2canvas(phoneScreen, {
-        backgroundColor: '#ff8c69',
+        backgroundColor: null,
         scale: 2,
         width: 320,
         height: 640,
@@ -993,10 +1051,23 @@ function App() {
       finalCanvas.height = finalHeight
       const ctx = finalCanvas.getContext('2d')
 
-      // Draw the screen capture scaled to 500x1000, centered horizontally
       const screenWidth = 500
       const screenHeight = 1000
       const xOffset = (finalWidth - screenWidth) / 2 // (600 - 500) / 2 = 50
+
+      // Draw phone-case.png as background
+      await new Promise((resolve, reject) => {
+        const bgImg = new Image()
+        bgImg.crossOrigin = 'anonymous'
+        bgImg.onload = () => {
+          ctx.drawImage(bgImg, xOffset, 0, screenWidth, screenHeight)
+          resolve()
+        }
+        bgImg.onerror = reject
+        bgImg.src = phoneCaseUrl
+      })
+
+      // Draw the design elements on top
       ctx.drawImage(screenCanvas, xOffset, 0, screenWidth, screenHeight)
 
       // Draw the frame on top at 600x1000 (original size)
@@ -1066,6 +1137,8 @@ function App() {
     } catch (error) {
       console.error('Download error:', error)
       alert('Download failed. Please try again.')
+    } finally {
+      setIsCapturing(false) // Hide loading overlay
     }
   }
 
@@ -1237,6 +1310,7 @@ function App() {
   // Handle touch start on images - supports single touch (drag) and multi-touch (pinch/rotate)
   const handleImageTouchStart = (e, imageId) => {
     e.stopPropagation()
+    e.preventDefault() // Prevent iOS Safari from interfering with touch events
     
     const placedImage = placedImages.find(img => img.id === imageId)
     if (!placedImage) return
@@ -1254,7 +1328,6 @@ function App() {
       }
     } else if (e.touches.length === 2) {
       // Two touches = pinch + rotate
-      e.preventDefault()
       
       const touch1 = e.touches[0]
       const touch2 = e.touches[1]
@@ -1284,6 +1357,7 @@ function App() {
   // Handle touch start on text - supports single touch (drag) and multi-touch (pinch/rotate)
   const handleTextTouchStart = (e, textId) => {
     e.stopPropagation()
+    e.preventDefault() // Prevent iOS Safari from interfering with touch events
     
     const placedText = placedTexts.find(text => text.id === textId)
     if (!placedText) return
@@ -1301,7 +1375,6 @@ function App() {
       }
     } else if (e.touches.length === 2) {
       // Two touches = pinch + rotate
-      e.preventDefault()
       
       const touch1 = e.touches[0]
       const touch2 = e.touches[1]
@@ -1367,7 +1440,7 @@ function App() {
       )
       
       const scaleChange = currentDistance / dragStartRef.current.initialDistance
-      const newScale = Math.max(0.3, Math.min(2.5, initialTransformRef.current.scale * scaleChange))
+      const newScale = Math.max(0.05, Math.min(2.5, initialTransformRef.current.scale * scaleChange))
       
       if (activeImageId) {
         setPlacedImages(prev => prev.map(img => 
@@ -1422,7 +1495,7 @@ function App() {
       
       // Calculate scale change
       const scaleChange = currentDistance / multiTouchRef.current.initialDistance
-      const newScale = Math.max(0.1, Math.min(3, 
+      const newScale = Math.max(0.05, Math.min(3, 
         multiTouchRef.current.initialScale * scaleChange
       ))
       
@@ -1591,7 +1664,11 @@ function App() {
   const saveDesignToBackend = async (designData) => {
     try {
       setIsSaving(true)
+      setIsCapturing(true) // Show loading overlay
       setSaveError(null)
+
+      // Wait for loading overlay to render
+      await new Promise(resolve => setTimeout(resolve, 50))
 
       // Step 1: Capture the design images using html2canvas
       const phoneScreen = document.querySelector('.phone-screen')
@@ -1607,12 +1684,15 @@ function App() {
       setActiveImageId(null)
       setActiveTextId(null)
 
+      // Wait for UI to update (hide controls)
+      await new Promise(resolve => setTimeout(resolve, 50))
+
       // Temporarily remove transform for accurate capture on mobile
       const originalTransform = phoneScreen.style.transform
       phoneScreen.style.transform = 'none'
 
-      // Wait for UI to update
-      await new Promise(resolve => setTimeout(resolve, 200))
+      // Wait for transform removal to take effect
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       // Capture the phone screen with html2canvas (with transparent background)
       const screenCanvas = await html2canvas(phoneScreen, {
@@ -1639,13 +1719,28 @@ function App() {
       const screenHeight = 1000
       const xOffset = (finalWidth - screenWidth) / 2 // (600 - 500) / 2 = 50
 
-      // IMAGE 1: Complete design (orange background + design elements + frame)
+      // IMAGE 1: Complete design (phone-case.png background + design elements + frame)
       const completeCanvas = document.createElement('canvas')
       completeCanvas.width = finalWidth
       completeCanvas.height = finalHeight
       const completeCtx = completeCanvas.getContext('2d')
 
-      // Draw the screen capture scaled to 500x1000, centered horizontally
+      // Draw phone-case.png as background
+      await new Promise((resolve, reject) => {
+        const bgImg = new Image()
+        bgImg.crossOrigin = 'anonymous'
+        bgImg.onload = () => {
+          completeCtx.drawImage(bgImg, xOffset, 0, screenWidth, screenHeight)
+          resolve()
+        }
+        bgImg.onerror = (error) => {
+          console.error('Failed to load background image:', error)
+          reject(new Error('Background image failed to load'))
+        }
+        bgImg.src = phoneCaseUrl
+      })
+
+      // Draw the design elements on top
       completeCtx.drawImage(screenCanvas, xOffset, 0, screenWidth, screenHeight)
 
       // Draw the frame on top at 600x1000 (original size)
@@ -1662,15 +1757,26 @@ function App() {
         })
       }
 
-      // IMAGE 2: Empty phone case (orange background + frame, no design elements)
+      // IMAGE 2: Empty phone case (phone-case.png background + frame, no design elements)
       const emptyCanvas = document.createElement('canvas')
       emptyCanvas.width = finalWidth
       emptyCanvas.height = finalHeight
       const emptyCtx = emptyCanvas.getContext('2d')
 
-      // Draw orange background in the screen area
-      emptyCtx.fillStyle = '#ff8c69'
-      emptyCtx.fillRect(xOffset, 0, screenWidth, screenHeight)
+      // Draw phone-case.png as background
+      await new Promise((resolve, reject) => {
+        const bgImg = new Image()
+        bgImg.crossOrigin = 'anonymous'
+        bgImg.onload = () => {
+          emptyCtx.drawImage(bgImg, xOffset, 0, screenWidth, screenHeight)
+          resolve()
+        }
+        bgImg.onerror = (error) => {
+          console.error('Failed to load background image:', error)
+          reject(new Error('Background image failed to load'))
+        }
+        bgImg.src = phoneCaseUrl
+      })
 
       // Draw the frame on top
       if (phoneFrameImg) {
@@ -1686,49 +1792,15 @@ function App() {
         })
       }
 
-      // IMAGE 3: Design only (transparent background, no frame, no orange)
+      // IMAGE 3: Design only (transparent background, no frame, no background image)
       const designOnlyCanvas = document.createElement('canvas')
       designOnlyCanvas.width = finalWidth
       designOnlyCanvas.height = finalHeight
       const designOnlyCtx = designOnlyCanvas.getContext('2d')
 
-      // Create a temporary canvas to extract only design elements (without orange background)
-      const tempCanvas = document.createElement('canvas')
-      tempCanvas.width = screenCanvas.width
-      tempCanvas.height = screenCanvas.height
-      const tempCtx = tempCanvas.getContext('2d')
-      
-      // Draw the screen canvas
-      tempCtx.drawImage(screenCanvas, 0, 0)
-      
-      // Get image data and remove orange background
-      const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height)
-      const data = imageData.data
-      
-      // Orange color RGB: #ff8c69 = (255, 140, 105)
-      const orangeR = 255
-      const orangeG = 140
-      const orangeB = 105
-      const tolerance = 30 // Color tolerance for matching
-      
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i]
-        const g = data[i + 1]
-        const b = data[i + 2]
-        
-        // Check if pixel is close to orange color
-        if (Math.abs(r - orangeR) < tolerance && 
-            Math.abs(g - orangeG) < tolerance && 
-            Math.abs(b - orangeB) < tolerance) {
-          // Make orange pixels transparent
-          data[i + 3] = 0
-        }
-      }
-      
-      tempCtx.putImageData(imageData, 0, 0)
-      
-      // Draw the cleaned image (without orange) to the final canvas
-      designOnlyCtx.drawImage(tempCanvas, xOffset, 0, screenWidth, screenHeight)
+      // Simply draw the captured canvas - it already has transparent background
+      // and only contains design elements (no phone-case.png background)
+      designOnlyCtx.drawImage(screenCanvas, xOffset, 0, screenWidth, screenHeight)
 
       // Convert all canvases to blobs
       const completeBlob = await new Promise((resolve) => {
@@ -1782,6 +1854,7 @@ function App() {
       throw error
     } finally {
       setIsSaving(false)
+      setIsCapturing(false) // Hide loading overlay
     }
   }
 
@@ -1814,6 +1887,11 @@ function App() {
   // Handle Print button click
   const handlePrint = async () => {
     try {
+      setIsCapturing(true) // Show loading overlay
+      
+      // Wait for loading overlay to render
+      await new Promise(resolve => setTimeout(resolve, 50))
+
       // Capture the phone screen area using html2canvas
       const phoneScreen = document.querySelector('.phone-screen')
       const phoneFrameImg = document.querySelector('.phone-case-frame img')
@@ -1829,12 +1907,15 @@ function App() {
       setActiveImageId(null)
       setActiveTextId(null)
 
-      // Wait for UI to update
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Wait for UI to update (hide controls)
+      await new Promise(resolve => setTimeout(resolve, 50))
 
       // Temporarily remove transform for accurate capture on mobile
       const originalTransform = phoneScreen.style.transform
       phoneScreen.style.transform = 'none'
+
+      // Wait for transform removal to take effect
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       const screenCanvas = await html2canvas(phoneScreen, {
         backgroundColor: null,
@@ -1861,10 +1942,23 @@ function App() {
       printCanvas.height = finalHeight
       const ctx = printCanvas.getContext('2d')
 
-      // Draw the screen capture scaled to 500x1000, centered horizontally
       const screenWidth = 500
       const screenHeight = 1000
       const xOffset = (finalWidth - screenWidth) / 2 // (600 - 500) / 2 = 50
+
+      // Draw phone-case.png as background
+      await new Promise((resolve, reject) => {
+        const bgImg = new Image()
+        bgImg.crossOrigin = 'anonymous'
+        bgImg.onload = () => {
+          ctx.drawImage(bgImg, xOffset, 0, screenWidth, screenHeight)
+          resolve()
+        }
+        bgImg.onerror = reject
+        bgImg.src = phoneCaseUrl
+      })
+
+      // Draw the design elements on top
       ctx.drawImage(screenCanvas, xOffset, 0, screenWidth, screenHeight)
 
       // Draw the frame on top at 600x1000 (original size)
@@ -1944,12 +2038,19 @@ function App() {
     } catch (error) {
       console.error('Print error:', error)
       alert('Yazdırma sırasında bir hata oluştu!')
+    } finally {
+      setIsCapturing(false) // Hide loading overlay
     }
   }
 
   // Handle Preview button click
   const handlePreview = async () => {
     try {
+      setIsCapturing(true) // Show loading overlay
+      
+      // Wait for loading overlay to render
+      await new Promise(resolve => setTimeout(resolve, 50))
+
       // Capture the phone screen area using html2canvas
       const phoneScreen = document.querySelector('.phone-screen')
       const phoneFrameImg = document.querySelector('.phone-case-frame img')
@@ -1965,12 +2066,15 @@ function App() {
       setActiveImageId(null)
       setActiveTextId(null)
 
-      // Wait for UI to update
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Wait for UI to update (hide controls)
+      await new Promise(resolve => setTimeout(resolve, 50))
 
       // Temporarily remove transform for accurate capture on mobile
       const originalTransform = phoneScreen.style.transform
       phoneScreen.style.transform = 'none'
+
+      // Wait for transform removal to take effect
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       const screenCanvas = await html2canvas(phoneScreen, {
         backgroundColor: null,
@@ -1997,10 +2101,23 @@ function App() {
       previewCanvas.height = finalHeight
       const ctx = previewCanvas.getContext('2d')
 
-      // Draw the screen capture scaled to 500x1000, centered horizontally
       const screenWidth = 500
       const screenHeight = 1000
       const xOffset = (finalWidth - screenWidth) / 2 // (600 - 500) / 2 = 50
+
+      // Draw phone-case.png as background
+      await new Promise((resolve, reject) => {
+        const bgImg = new Image()
+        bgImg.crossOrigin = 'anonymous'
+        bgImg.onload = () => {
+          ctx.drawImage(bgImg, xOffset, 0, screenWidth, screenHeight)
+          resolve()
+        }
+        bgImg.onerror = reject
+        bgImg.src = phoneCaseUrl
+      })
+
+      // Draw the design elements on top
       ctx.drawImage(screenCanvas, xOffset, 0, screenWidth, screenHeight)
 
       // Draw the frame on top at 600x1000 (original size)
@@ -2024,14 +2141,85 @@ function App() {
     } catch (error) {
       console.error('Preview error:', error)
       alert('Önizleme oluşturulurken bir hata oluştu!')
+    } finally {
+      setIsCapturing(false) // Hide loading overlay
     }
   }
 
   return (
     <div className="phone-case-modal">
+      {/* Loading Overlay */}
+      {isCapturing && (
+        <div className="capture-overlay">
+          <div className="capture-spinner"></div>
+          <p>Generating images...</p>
+        </div>
+      )}
+      
       <div className={`app ${isRotating ? 'rotating' : ''}`}>
       {/* Top Menu Bar */}
       <div className="top-menu">
+        {/* Hamburger Menu Button - Mobile Only */}
+        <button 
+          className="hamburger-menu-btn" 
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          aria-label="Menu"
+          title="Menu"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+
+        {/* Mobile Dropdown Menu */}
+        {showMobileMenu && (
+          <div className="mobile-menu-dropdown">
+            <button 
+              className="mobile-menu-item" 
+              onClick={() => {
+                setShowDownloadModal(true);
+                setShowMobileMenu(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <polyline points="7 10 12 15 17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>İndir</span>
+            </button>
+            <button 
+              className="mobile-menu-item" 
+              onClick={() => {
+                handlePrint();
+                setShowMobileMenu(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polyline points="6 9 6 2 18 2 18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="6" y="14" width="12" height="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>Bastır</span>
+            </button>
+            <button 
+              className="mobile-menu-item" 
+              onClick={() => {
+                handlePreview();
+                setShowMobileMenu(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>Ön İzleme</span>
+            </button>
+          </div>
+        )}
+        
         <button 
           className="download-btn" 
           onClick={() => setShowDownloadModal(true)}
@@ -4700,3 +4888,5 @@ function App() {
 }
 
 export default App
+
+
