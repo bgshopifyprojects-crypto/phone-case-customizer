@@ -5,13 +5,22 @@ import jsPDF from 'jspdf'
 import QRCode from 'qrcode'
 
 function App() {
-  // Get frame URL and theme color from liquid template data attributes
-  const frameUrl = document.getElementById('phone-case-root')?.dataset?.frameUrl || '/phone-case-frame.png'
-  const phoneCaseUrl = document.getElementById('phone-case-root')?.dataset?.phoneCaseUrl || '/phone-case.png'
-  const designsUrl = document.getElementById('phone-case-root')?.dataset?.designsUrl || '/pre-design-images.json'
-  const initialThemeColor = document.getElementById('phone-case-root')?.dataset?.themeColor || '#00a8e8'
-  const productPrice = document.getElementById('phone-case-root')?.dataset?.productPrice || ''
-  const productComparePrice = document.getElementById('phone-case-root')?.dataset?.productComparePrice || ''
+  // Get initial values from liquid template data attributes
+  const rootElement = document.getElementById('phone-case-root')
+  const initialFrameUrl = rootElement?.dataset?.frameUrl || '/phone-case-frame.png'
+  const initialPhoneCaseUrl = rootElement?.dataset?.phoneCaseUrl || '/phone-case.png'
+  const initialProductImageUrl = rootElement?.dataset?.productImageUrl || ''
+  const initialVariantId = rootElement?.dataset?.variantId || ''
+  const designsUrl = rootElement?.dataset?.designsUrl || '/pre-design-images.json'
+  const initialThemeColor = rootElement?.dataset?.themeColor || '#00a8e8'
+  const productPrice = rootElement?.dataset?.productPrice || ''
+  const productComparePrice = rootElement?.dataset?.productComparePrice || ''
+  
+  // State for variant-specific values (can change when variant changes)
+  const [frameUrl, setFrameUrl] = useState(initialFrameUrl)
+  const [phoneCaseUrl, setPhoneCaseUrl] = useState(initialPhoneCaseUrl)
+  const [productImageUrl, setProductImageUrl] = useState(initialProductImageUrl)
+  const [currentVariantId, setCurrentVariantId] = useState(initialVariantId)
   
   // State for theme color (can be updated from admin settings)
   const [themeColor, setThemeColor] = useState(initialThemeColor)
@@ -61,6 +70,77 @@ function App() {
     }
   }, [themeColor])
 
+  // Watch for variant changes and update background/frame accordingly
+  useEffect(() => {
+    const rootElement = document.getElementById('phone-case-root')
+    if (!rootElement) return
+
+    // Function to update variant-specific data
+    const updateVariantData = () => {
+      const newVariantId = rootElement.dataset.variantId
+      const newPhoneCaseUrl = rootElement.dataset.phoneCaseUrl
+      const newProductImageUrl = rootElement.dataset.productImageUrl
+      const newFrameUrl = rootElement.dataset.frameUrl
+
+      // Only update if variant actually changed
+      if (newVariantId && newVariantId !== currentVariantId) {
+        console.log('Variant changed from', currentVariantId, 'to', newVariantId)
+        console.log('New phone case URL:', newPhoneCaseUrl)
+        console.log('New product image URL:', newProductImageUrl)
+        
+        setCurrentVariantId(newVariantId)
+        
+        if (newPhoneCaseUrl) {
+          setPhoneCaseUrl(newPhoneCaseUrl)
+        }
+        
+        if (newProductImageUrl) {
+          setProductImageUrl(newProductImageUrl)
+        }
+        
+        if (newFrameUrl) {
+          setFrameUrl(newFrameUrl)
+        }
+      }
+    }
+
+    // Create a MutationObserver to watch for data attribute changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && 
+            (mutation.attributeName === 'data-variant-id' ||
+             mutation.attributeName === 'data-phone-case-url' ||
+             mutation.attributeName === 'data-product-image-url')) {
+          console.log('Data attribute changed:', mutation.attributeName)
+          updateVariantData()
+        }
+      })
+    })
+
+    // Start observing
+    observer.observe(rootElement, {
+      attributes: true,
+      attributeFilter: ['data-variant-id', 'data-phone-case-url', 'data-product-image-url', 'data-frame-url']
+    })
+
+    // Also listen for Shopify variant change events
+    const handleVariantChange = (event) => {
+      console.log('Shopify variant change event:', event)
+      // Give Liquid template time to update data attributes
+      setTimeout(updateVariantData, 100)
+    }
+
+    document.addEventListener('variant:change', handleVariantChange)
+    document.addEventListener('variantChange', handleVariantChange)
+
+    // Cleanup
+    return () => {
+      observer.disconnect()
+      document.removeEventListener('variant:change', handleVariantChange)
+      document.removeEventListener('variantChange', handleVariantChange)
+    }
+  }, [currentVariantId])
+
   // Set phone-screen background image dynamically
   useEffect(() => {
     const phoneScreen = document.querySelector('.phone-screen')
@@ -68,6 +148,47 @@ function App() {
       phoneScreen.style.backgroundImage = `url('${phoneCaseUrl}')`
     }
   }, [phoneCaseUrl])
+
+  // Generate frame from background image if frameUrl is default
+  const [generatedFrameUrl, setGeneratedFrameUrl] = useState(frameUrl)
+  const frameCache = useRef({}) // Cache frames by product image URL
+  
+  useEffect(() => {
+    // DEBUG: Generate frame from product image if available
+    if (frameUrl.includes('phone-case-frame.png') && productImageUrl) {
+      // Check cache first
+      if (frameCache.current[productImageUrl]) {
+        console.log('Using cached frame for:', productImageUrl)
+        setGeneratedFrameUrl(frameCache.current[productImageUrl])
+        return
+      }
+      
+      console.log('DEBUG: Generating frame from product image:', productImageUrl)
+      
+      // Add timestamp to prevent caching
+      const timestamp = Date.now()
+      
+      fetch(window.location.origin + '/apps/customizer/generate-frame?t=' + timestamp, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: 'https:' + productImageUrl })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.frameUrl) {
+            console.log('Frame generated successfully')
+            // Cache the frame URL
+            frameCache.current[productImageUrl] = data.frameUrl
+            setGeneratedFrameUrl(data.frameUrl)
+          } else {
+            console.error('Frame generation failed:', data.error)
+          }
+        })
+        .catch(err => {
+          console.error('Frame generation error:', err)
+        })
+    }
+  }, [frameUrl, productImageUrl])
   const [uploadedImages, setUploadedImages] = useState([])
   const [selectedImage, setSelectedImage] = useState(null)
   const [placedImages, setPlacedImages] = useState([])
@@ -466,11 +587,11 @@ function App() {
       phoneCaseImg.src = phoneCaseUrl
       
       const frameImg = new Image()
-      frameImg.src = frameUrl
+      frameImg.src = generatedFrameUrl
     }
     
     preloadImages()
-  }, [frameUrl, phoneCaseUrl])
+  }, [generatedFrameUrl, phoneCaseUrl])
 
   // Helper functions for color conversion
   const hslToHex = (h, s, l) => {
@@ -536,12 +657,54 @@ function App() {
     files.forEach(file => {
       const reader = new FileReader()
       reader.onload = (event) => {
-        const newImage = {
+        const imageData = {
           id: Date.now() + Math.random(),
           src: event.target.result,
           name: file.name
         }
-        setUploadedImages(prev => [...prev, newImage])
+        
+        // Add to uploaded images gallery
+        setUploadedImages(prev => [...prev, imageData])
+        
+        // Automatically place on phone frame
+        const img = new Image()
+        img.onload = () => {
+          const maxWidth = 240  // Smaller max width
+          const maxHeight = 520 // Smaller max height
+          
+          let width = img.width
+          let height = img.height
+          let scale = 1
+          
+          // Calculate scale to fit within phone case if image is too large
+          if (width > maxWidth || height > maxHeight) {
+            const scaleX = maxWidth / width
+            const scaleY = maxHeight / height
+            scale = Math.min(scaleX, scaleY)
+          }
+          
+          // Center position (phone case is 320x640)
+          const x = 160  // Center horizontally
+          const y = 320  // Center vertically
+          
+          const newPlacedImage = {
+            id: Date.now() + Math.random(),
+            src: imageData.src,
+            name: imageData.name,
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            scale: scale,
+            rotation: 0
+          }
+          setPlacedImages(prev => [...prev, newPlacedImage])
+          setAllLayers(prev => [...prev, { id: newPlacedImage.id, type: 'image' }])
+          setActiveImageId(newPlacedImage.id)
+          setActiveTextId(null)
+          setUploadDrawerOpen(false)  // Close drawer on mobile
+        }
+        img.src = imageData.src
       }
       reader.readAsDataURL(file)
     })
@@ -573,12 +736,54 @@ function App() {
     files.forEach(file => {
       const reader = new FileReader()
       reader.onload = (event) => {
-        const newImage = {
+        const imageData = {
           id: Date.now() + Math.random(),
           src: event.target.result,
           name: file.name
         }
-        setUploadedImages(prev => [...prev, newImage])
+        
+        // Add to uploaded images gallery
+        setUploadedImages(prev => [...prev, imageData])
+        
+        // Automatically place on phone frame
+        const img = new Image()
+        img.onload = () => {
+          const maxWidth = 240  // Smaller max width
+          const maxHeight = 520 // Smaller max height
+          
+          let width = img.width
+          let height = img.height
+          let scale = 1
+          
+          // Calculate scale to fit within phone case if image is too large
+          if (width > maxWidth || height > maxHeight) {
+            const scaleX = maxWidth / width
+            const scaleY = maxHeight / height
+            scale = Math.min(scaleX, scaleY)
+          }
+          
+          // Center position (phone case is 320x640)
+          const x = 160  // Center horizontally
+          const y = 320  // Center vertically
+          
+          const newPlacedImage = {
+            id: Date.now() + Math.random(),
+            src: imageData.src,
+            name: imageData.name,
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            scale: scale,
+            rotation: 0
+          }
+          setPlacedImages(prev => [...prev, newPlacedImage])
+          setAllLayers(prev => [...prev, { id: newPlacedImage.id, type: 'image' }])
+          setActiveImageId(newPlacedImage.id)
+          setActiveTextId(null)
+          setUploadDrawerOpen(false)  // Close drawer on mobile
+        }
+        img.src = imageData.src
       }
       reader.readAsDataURL(file)
     })
@@ -670,7 +875,7 @@ function App() {
       rotation: 0,
       fontSize: 24,
       color: '#000000',
-      fontFamily: 'Arial',
+      fontFamily: 'Poppins',
       fontWeight: 'bold',
       fontStyle: 'normal'
     }
@@ -995,50 +1200,115 @@ function App() {
     saveToHistory()
   }
 
-  const handleDownload = async (format) => {
-    try {
-      setIsCapturing(true) // Show loading overlay
+  // NEW: Direct canvas rendering (bypasses html2canvas and broken images)
+  const captureDesignDirectly = async () => {
+    // Create canvas at final size 600x1000
+    const canvas = document.createElement('canvas')
+    canvas.width = 1200  // 600 * 2 for scale
+    canvas.height = 2000 // 1000 * 2 for scale
+    const ctx = canvas.getContext('2d')
+    
+    // Scale for high quality
+    ctx.scale(2, 2)
+    
+    // Draw background (phone-case.png) to fill entire 600x1000
+    const bgImg = new Image()
+    bgImg.crossOrigin = 'anonymous'
+    await new Promise((resolve, reject) => {
+      bgImg.onload = resolve
+      bgImg.onerror = reject
+      bgImg.src = phoneCaseUrl
+    })
+    
+    // Draw background to fill the entire canvas (600x1000 logical size)
+    ctx.drawImage(bgImg, 0, 0, 600, 1000)
+    
+    // Calculate offset to center the design area (320x640) within 600x1000
+    const designAreaWidth = 500
+    const designAreaHeight = 1000
+    const xOffset = (600 - designAreaWidth) / 2 // 50px
+    const yOffset = 0
+    
+    // Scale factor to map design positions (320x640) to design area (500x1000)
+    const scaleX = designAreaWidth / 320
+    const scaleY = designAreaHeight / 640
+    
+    // Draw all placed images
+    for (const img of placedImages) {
+      const image = new Image()
+      image.crossOrigin = 'anonymous'
+      await new Promise((resolve) => {
+        image.onload = resolve
+        image.onerror = resolve // Continue even if image fails
+        image.src = img.src
+      })
       
-      // Wait for loading overlay to render
+      ctx.save()
+      ctx.translate(xOffset + img.x * scaleX, yOffset + img.y * scaleY)
+      ctx.rotate((img.rotation || 0) * Math.PI / 180)
+      ctx.scale((img.scale || 1) * scaleX, (img.scale || 1) * scaleY)
+      ctx.globalAlpha = img.opacity !== undefined ? img.opacity : 1
+      
+      // Apply filters if any
+      if (img.filter) {
+        ctx.filter = img.filter
+      }
+      
+      ctx.drawImage(image, -img.width / 2, -img.height / 2, img.width, img.height)
+      ctx.restore()
+    }
+    
+    // Draw all placed texts
+    for (const text of placedTexts) {
+      ctx.save()
+      ctx.translate(xOffset + text.x * scaleX, yOffset + text.y * scaleY)
+      ctx.rotate((text.rotation || 0) * Math.PI / 180)
+      ctx.scale((text.scale || 1) * scaleX, (text.scale || 1) * scaleY)
+      ctx.globalAlpha = text.opacity !== undefined ? text.opacity : 1
+      
+      ctx.font = `${text.fontStyle || 'normal'} ${text.fontWeight || 'normal'} ${text.fontSize}px ${text.fontFamily || 'Arial'}`
+      ctx.fillStyle = text.color || '#000000'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      
+      // Apply text shadow if exists
+      if (text.textShadow) {
+        const shadowMatch = text.textShadow.match(/(\d+)px\s+(\d+)px\s+(\d+)px\s+(#[0-9A-F]{6})/i)
+        if (shadowMatch) {
+          ctx.shadowOffsetX = parseInt(shadowMatch[1])
+          ctx.shadowOffsetY = parseInt(shadowMatch[2])
+          ctx.shadowBlur = parseInt(shadowMatch[3])
+          ctx.shadowColor = shadowMatch[4]
+        }
+      }
+      
+      ctx.fillText(text.content, 0, 0)
+      ctx.restore()
+    }
+    
+    return canvas
+  }
+
+  const handleDownload = async (format) => {
+    const perfStart = performance.now()
+    console.log('🚀 Download started (Direct Canvas Rendering)')
+    
+    try {
+      setIsCapturing(true)
       await new Promise(resolve => setTimeout(resolve, 50))
 
-      // Get elements
-      const phoneScreen = document.querySelector('.phone-screen')
-      const phoneFrameImg = document.querySelector('.phone-case-frame img')
-      
-      if (!phoneScreen) {
-        alert('Phone screen element not found')
-        return
-      }
-
-      // Hide control buttons temporarily
+      // Hide control buttons
       setActiveImageId(null)
       setActiveTextId(null)
-
-      // Wait for UI to update (hide controls)
       await new Promise(resolve => setTimeout(resolve, 50))
 
-      // Temporarily remove transform for accurate capture on mobile
-      const originalTransform = phoneScreen.style.transform
-      phoneScreen.style.transform = 'none'
+      console.log(`⏱️ Setup complete: ${(performance.now() - perfStart).toFixed(0)}ms`)
+      const captureStart = performance.now()
 
-      // Wait for transform removal to take effect
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Use direct canvas rendering instead of html2canvas
+      const screenCanvas = await captureDesignDirectly()
 
-      // Capture the phone screen with html2canvas (transparent background)
-      const screenCanvas = await html2canvas(phoneScreen, {
-        backgroundColor: null,
-        scale: 2,
-        width: 320,
-        height: 640,
-        logging: false,
-        useCORS: true,
-        allowTaint: true
-      })
-
-      // Restore transform
-      phoneScreen.style.transform = originalTransform
-
+      console.log(`⏱️ Direct canvas capture complete: ${(performance.now() - captureStart).toFixed(0)}ms`)
       console.log('Screen canvas dimensions:', screenCanvas.width, 'x', screenCanvas.height)
 
       // Final dimensions: 600x1000 (frame size)
@@ -1047,47 +1317,42 @@ function App() {
       
       // Create final canvas
       const finalCanvas = document.createElement('canvas')
-      finalCanvas.width = finalWidth
-      finalCanvas.height = finalHeight
+      finalCanvas.width = finalWidth * 2  // 1200 for scale
+      finalCanvas.height = finalHeight * 2 // 2000 for scale
       const ctx = finalCanvas.getContext('2d')
 
-      const screenWidth = 500
-      const screenHeight = 1000
-      const xOffset = (finalWidth - screenWidth) / 2 // (600 - 500) / 2 = 50
+      // Draw the captured design (already at 600x1000 with design elements positioned correctly)
+      ctx.drawImage(screenCanvas, 0, 0)
 
-      // Draw phone-case.png as background
-      await new Promise((resolve, reject) => {
-        const bgImg = new Image()
-        bgImg.crossOrigin = 'anonymous'
-        bgImg.onload = () => {
-          ctx.drawImage(bgImg, xOffset, 0, screenWidth, screenHeight)
-          resolve()
-        }
-        bgImg.onerror = reject
-        bgImg.src = phoneCaseUrl
-      })
-
-      // Draw the design elements on top
-      ctx.drawImage(screenCanvas, xOffset, 0, screenWidth, screenHeight)
-
-      // Draw the frame on top at 600x1000 (original size)
+      // Draw the frame on top
+      const phoneFrameImg = document.querySelector('.phone-case-frame img')
       if (phoneFrameImg) {
+        const frameStart = performance.now()
+        console.log('🖼️ Loading frame image')
+        
         await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Frame timeout')), 10000)
           const frameImg = new Image()
           frameImg.crossOrigin = 'anonymous'
           frameImg.onload = () => {
-            ctx.drawImage(frameImg, 0, 0, finalWidth, finalHeight)
+            clearTimeout(timeout)
+            console.log(`⏱️ Frame loaded: ${(performance.now() - frameStart).toFixed(0)}ms`)
+            ctx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
             resolve()
           }
-          frameImg.onerror = reject
+          frameImg.onerror = (error) => {
+            clearTimeout(timeout)
+            reject(error)
+          }
           frameImg.src = phoneFrameImg.src
         })
       }
 
-      console.log('Final canvas dimensions:', finalCanvas.width, 'x', finalCanvas.height)
+      const exportStart = performance.now()
 
       if (format === 'jpg') {
         finalCanvas.toBlob((blob) => {
+          console.log(`⏱️ Export to JPG: ${(performance.now() - exportStart).toFixed(0)}ms`)
           const url = URL.createObjectURL(blob)
           const link = document.createElement('a')
           link.href = url
@@ -1097,6 +1362,7 @@ function App() {
         }, 'image/jpeg', 0.95)
       } else if (format === 'png') {
         finalCanvas.toBlob((blob) => {
+          console.log(`⏱️ Export to PNG: ${(performance.now() - exportStart).toFixed(0)}ms`)
           const url = URL.createObjectURL(blob)
           const link = document.createElement('a')
           link.href = url
@@ -1105,16 +1371,12 @@ function App() {
           URL.revokeObjectURL(url)
         }, 'image/png')
       } else if (format === 'svg') {
-        // For SVG, we'll embed the PNG as a base64 image inside the SVG
-        // This ensures it looks exactly like PNG/JPG
         const imgData = finalCanvas.toDataURL('image/png')
-        
         const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="600" height="1000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <image width="600" height="1000" xlink:href="${imgData}"/>
 </svg>`
-        
-        // Download SVG
+        console.log(`⏱️ Export to SVG: ${(performance.now() - exportStart).toFixed(0)}ms`)
         const blob = new Blob([svgContent], { type: 'image/svg+xml' })
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
@@ -1131,14 +1393,16 @@ function App() {
         })
         pdf.addImage(imgData, 'PNG', 0, 0, finalWidth, finalHeight)
         pdf.save('phone-case-design.pdf')
+        console.log(`⏱️ Export to PDF: ${(performance.now() - exportStart).toFixed(0)}ms`)
       }
       
+      console.log(`✅ Total download time: ${(performance.now() - perfStart).toFixed(0)}ms`)
       setShowDownloadModal(false)
     } catch (error) {
-      console.error('Download error:', error)
-      alert('Download failed. Please try again.')
+      console.error('❌ Download error:', error)
+      alert('Download failed: ' + error.message)
     } finally {
-      setIsCapturing(false) // Hide loading overlay
+      setIsCapturing(false)
     }
   }
 
@@ -1664,92 +1928,46 @@ function App() {
   const saveDesignToBackend = async (designData) => {
     try {
       setIsSaving(true)
-      setIsCapturing(true) // Show loading overlay
+      setIsCapturing(true)
       setSaveError(null)
 
-      // Wait for loading overlay to render
       await new Promise(resolve => setTimeout(resolve, 50))
 
-      // Step 1: Capture the design images using html2canvas
-      const phoneScreen = document.querySelector('.phone-screen')
-      const phoneFrameImg = document.querySelector('.phone-case-frame img')
-      
-      if (!phoneScreen) {
-        throw new Error('Phone screen element not found')
-      }
-
-      // Hide control buttons temporarily
+      // Hide control buttons
       const currentActiveImageId = activeImageId
       const currentActiveTextId = activeTextId
       setActiveImageId(null)
       setActiveTextId(null)
-
-      // Wait for UI to update (hide controls)
       await new Promise(resolve => setTimeout(resolve, 50))
 
-      // Temporarily remove transform for accurate capture on mobile
-      const originalTransform = phoneScreen.style.transform
-      phoneScreen.style.transform = 'none'
+      console.log('🚀 Generating cart images (Direct Canvas)')
 
-      // Wait for transform removal to take effect
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // Capture the phone screen with html2canvas (with transparent background)
-      const screenCanvas = await html2canvas(phoneScreen, {
-        backgroundColor: null, // Transparent to capture design elements only
-        scale: 2,
-        width: 320,
-        height: 640,
-        logging: false,
-        useCORS: true,
-        allowTaint: true
-      })
-
-      // Restore transform and active states
-      phoneScreen.style.transform = originalTransform
-      setActiveImageId(currentActiveImageId)
-      setActiveTextId(currentActiveTextId)
+      // Use direct canvas rendering instead of html2canvas
+      const screenCanvas = await captureDesignDirectly()
 
       console.log('Captured canvas dimensions:', screenCanvas.width, 'x', screenCanvas.height)
 
       // Final dimensions: 600x1000 (frame size)
       const finalWidth = 600
       const finalHeight = 1000
-      const screenWidth = 500
-      const screenHeight = 1000
-      const xOffset = (finalWidth - screenWidth) / 2 // (600 - 500) / 2 = 50
 
-      // IMAGE 1: Complete design (phone-case.png background + design elements + frame)
+      // IMAGE 1: Complete design (background + design + frame)
       const completeCanvas = document.createElement('canvas')
-      completeCanvas.width = finalWidth
-      completeCanvas.height = finalHeight
+      completeCanvas.width = finalWidth * 2
+      completeCanvas.height = finalHeight * 2
       const completeCtx = completeCanvas.getContext('2d')
 
-      // Draw phone-case.png as background
-      await new Promise((resolve, reject) => {
-        const bgImg = new Image()
-        bgImg.crossOrigin = 'anonymous'
-        bgImg.onload = () => {
-          completeCtx.drawImage(bgImg, xOffset, 0, screenWidth, screenHeight)
-          resolve()
-        }
-        bgImg.onerror = (error) => {
-          console.error('Failed to load background image:', error)
-          reject(new Error('Background image failed to load'))
-        }
-        bgImg.src = phoneCaseUrl
-      })
+      // Draw captured design
+      completeCtx.drawImage(screenCanvas, 0, 0)
 
-      // Draw the design elements on top
-      completeCtx.drawImage(screenCanvas, xOffset, 0, screenWidth, screenHeight)
-
-      // Draw the frame on top at 600x1000 (original size)
+      // Draw frame
+      const phoneFrameImg = document.querySelector('.phone-case-frame img')
       if (phoneFrameImg) {
         await new Promise((resolve, reject) => {
           const frameImg = new Image()
           frameImg.crossOrigin = 'anonymous'
           frameImg.onload = () => {
-            completeCtx.drawImage(frameImg, 0, 0, finalWidth, finalHeight)
+            completeCtx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
             resolve()
           }
           frameImg.onerror = reject
@@ -1757,34 +1975,33 @@ function App() {
         })
       }
 
-      // IMAGE 2: Empty phone case (phone-case.png background + frame, no design elements)
+      // IMAGE 2: Empty phone case (background + frame, no design)
       const emptyCanvas = document.createElement('canvas')
-      emptyCanvas.width = finalWidth
-      emptyCanvas.height = finalHeight
+      emptyCanvas.width = finalWidth * 2
+      emptyCanvas.height = finalHeight * 2
       const emptyCtx = emptyCanvas.getContext('2d')
 
-      // Draw phone-case.png as background
+      // Draw background
+      const bgImg = new Image()
+      bgImg.crossOrigin = 'anonymous'
       await new Promise((resolve, reject) => {
-        const bgImg = new Image()
-        bgImg.crossOrigin = 'anonymous'
         bgImg.onload = () => {
-          emptyCtx.drawImage(bgImg, xOffset, 0, screenWidth, screenHeight)
+          emptyCtx.scale(2, 2)
+          emptyCtx.drawImage(bgImg, 0, 0, 600, 1000)
           resolve()
         }
-        bgImg.onerror = (error) => {
-          console.error('Failed to load background image:', error)
-          reject(new Error('Background image failed to load'))
-        }
+        bgImg.onerror = reject
         bgImg.src = phoneCaseUrl
       })
 
-      // Draw the frame on top
+      // Draw frame
       if (phoneFrameImg) {
         await new Promise((resolve, reject) => {
           const frameImg = new Image()
           frameImg.crossOrigin = 'anonymous'
           frameImg.onload = () => {
-            emptyCtx.drawImage(frameImg, 0, 0, finalWidth, finalHeight)
+            emptyCtx.setTransform(1, 0, 0, 1, 0, 0) // Reset transform
+            emptyCtx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
             resolve()
           }
           frameImg.onerror = reject
@@ -1792,15 +2009,64 @@ function App() {
         })
       }
 
-      // IMAGE 3: Design only (transparent background, no frame, no background image)
+      // IMAGE 3: Design only (transparent background, no frame)
       const designOnlyCanvas = document.createElement('canvas')
-      designOnlyCanvas.width = finalWidth
-      designOnlyCanvas.height = finalHeight
+      designOnlyCanvas.width = finalWidth * 2
+      designOnlyCanvas.height = finalHeight * 2
       const designOnlyCtx = designOnlyCanvas.getContext('2d')
 
-      // Simply draw the captured canvas - it already has transparent background
-      // and only contains design elements (no phone-case.png background)
-      designOnlyCtx.drawImage(screenCanvas, xOffset, 0, screenWidth, screenHeight)
+      // Redraw only design elements without background
+      designOnlyCtx.scale(2, 2)
+      const designAreaWidth = 500
+      const xOffset = (600 - designAreaWidth) / 2
+      const scaleX = designAreaWidth / 320
+      const scaleY = 1000 / 640
+
+      for (const img of placedImages) {
+        const image = new Image()
+        image.crossOrigin = 'anonymous'
+        await new Promise((resolve) => {
+          image.onload = resolve
+          image.onerror = resolve
+          image.src = img.src
+        })
+        
+        designOnlyCtx.save()
+        designOnlyCtx.translate(xOffset + img.x * scaleX, img.y * scaleY)
+        designOnlyCtx.rotate((img.rotation || 0) * Math.PI / 180)
+        designOnlyCtx.scale((img.scale || 1) * scaleX, (img.scale || 1) * scaleY)
+        designOnlyCtx.globalAlpha = img.opacity !== undefined ? img.opacity : 1
+        if (img.filter) designOnlyCtx.filter = img.filter
+        designOnlyCtx.drawImage(image, -img.width / 2, -img.height / 2, img.width, img.height)
+        designOnlyCtx.restore()
+      }
+
+      for (const text of placedTexts) {
+        designOnlyCtx.save()
+        designOnlyCtx.translate(xOffset + text.x * scaleX, text.y * scaleY)
+        designOnlyCtx.rotate((text.rotation || 0) * Math.PI / 180)
+        designOnlyCtx.scale((text.scale || 1) * scaleX, (text.scale || 1) * scaleY)
+        designOnlyCtx.globalAlpha = text.opacity !== undefined ? text.opacity : 1
+        designOnlyCtx.font = `${text.fontStyle || 'normal'} ${text.fontWeight || 'normal'} ${text.fontSize}px ${text.fontFamily || 'Arial'}`
+        designOnlyCtx.fillStyle = text.color || '#000000'
+        designOnlyCtx.textAlign = 'center'
+        designOnlyCtx.textBaseline = 'middle'
+        if (text.textShadow) {
+          const shadowMatch = text.textShadow.match(/(\d+)px\s+(\d+)px\s+(\d+)px\s+(#[0-9A-F]{6})/i)
+          if (shadowMatch) {
+            designOnlyCtx.shadowOffsetX = parseInt(shadowMatch[1])
+            designOnlyCtx.shadowOffsetY = parseInt(shadowMatch[2])
+            designOnlyCtx.shadowBlur = parseInt(shadowMatch[3])
+            designOnlyCtx.shadowColor = shadowMatch[4]
+          }
+        }
+        designOnlyCtx.fillText(text.content, 0, 0)
+        designOnlyCtx.restore()
+      }
+
+      // Restore active states
+      setActiveImageId(currentActiveImageId)
+      setActiveTextId(currentActiveTextId)
 
       // Convert all canvases to blobs
       const completeBlob = await new Promise((resolve) => {
@@ -1854,7 +2120,7 @@ function App() {
       throw error
     } finally {
       setIsSaving(false)
-      setIsCapturing(false) // Hide loading overlay
+      setIsCapturing(false)
     }
   }
 
@@ -1892,45 +2158,15 @@ function App() {
       // Wait for loading overlay to render
       await new Promise(resolve => setTimeout(resolve, 50))
 
-      // Capture the phone screen area using html2canvas
-      const phoneScreen = document.querySelector('.phone-screen')
-      const phoneFrameImg = document.querySelector('.phone-case-frame img')
-      
-      if (!phoneScreen) {
-        alert('Tasarım alanı bulunamadı!')
-        return
-      }
-
       // Hide control buttons temporarily
-      const currentActiveImageId = activeImageId
-      const currentActiveTextId = activeTextId
       setActiveImageId(null)
       setActiveTextId(null)
 
       // Wait for UI to update (hide controls)
       await new Promise(resolve => setTimeout(resolve, 50))
 
-      // Temporarily remove transform for accurate capture on mobile
-      const originalTransform = phoneScreen.style.transform
-      phoneScreen.style.transform = 'none'
-
-      // Wait for transform removal to take effect
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      const screenCanvas = await html2canvas(phoneScreen, {
-        backgroundColor: null,
-        scale: 2,
-        width: 320,
-        height: 640,
-        logging: false,
-        useCORS: true,
-        allowTaint: true
-      })
-
-      // Restore transform and active states
-      phoneScreen.style.transform = originalTransform
-      setActiveImageId(currentActiveImageId)
-      setActiveTextId(currentActiveTextId)
+      // Use direct canvas rendering instead of html2canvas
+      const screenCanvas = await captureDesignDirectly()
 
       // Final dimensions: 600x1000 (frame size)
       const finalWidth = 600
@@ -1938,36 +2174,21 @@ function App() {
       
       // Create final canvas
       const printCanvas = document.createElement('canvas')
-      printCanvas.width = finalWidth
-      printCanvas.height = finalHeight
+      printCanvas.width = finalWidth * 2  // 1200 for scale
+      printCanvas.height = finalHeight * 2 // 2000 for scale
       const ctx = printCanvas.getContext('2d')
 
-      const screenWidth = 500
-      const screenHeight = 1000
-      const xOffset = (finalWidth - screenWidth) / 2 // (600 - 500) / 2 = 50
+      // Draw the captured design (already at 600x1000 with design elements positioned correctly)
+      ctx.drawImage(screenCanvas, 0, 0)
 
-      // Draw phone-case.png as background
-      await new Promise((resolve, reject) => {
-        const bgImg = new Image()
-        bgImg.crossOrigin = 'anonymous'
-        bgImg.onload = () => {
-          ctx.drawImage(bgImg, xOffset, 0, screenWidth, screenHeight)
-          resolve()
-        }
-        bgImg.onerror = reject
-        bgImg.src = phoneCaseUrl
-      })
-
-      // Draw the design elements on top
-      ctx.drawImage(screenCanvas, xOffset, 0, screenWidth, screenHeight)
-
-      // Draw the frame on top at 600x1000 (original size)
+      // Draw the frame on top
+      const phoneFrameImg = document.querySelector('.phone-case-frame img')
       if (phoneFrameImg) {
         await new Promise((resolve, reject) => {
           const frameImg = new Image()
           frameImg.crossOrigin = 'anonymous'
           frameImg.onload = () => {
-            ctx.drawImage(frameImg, 0, 0, finalWidth, finalHeight)
+            ctx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
             resolve()
           }
           frameImg.onerror = reject
@@ -2051,45 +2272,15 @@ function App() {
       // Wait for loading overlay to render
       await new Promise(resolve => setTimeout(resolve, 50))
 
-      // Capture the phone screen area using html2canvas
-      const phoneScreen = document.querySelector('.phone-screen')
-      const phoneFrameImg = document.querySelector('.phone-case-frame img')
-      
-      if (!phoneScreen) {
-        alert('Tasarım alanı bulunamadı!')
-        return
-      }
-
       // Hide control buttons temporarily
-      const currentActiveImageId = activeImageId
-      const currentActiveTextId = activeTextId
       setActiveImageId(null)
       setActiveTextId(null)
 
       // Wait for UI to update (hide controls)
       await new Promise(resolve => setTimeout(resolve, 50))
 
-      // Temporarily remove transform for accurate capture on mobile
-      const originalTransform = phoneScreen.style.transform
-      phoneScreen.style.transform = 'none'
-
-      // Wait for transform removal to take effect
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      const screenCanvas = await html2canvas(phoneScreen, {
-        backgroundColor: null,
-        scale: 2,
-        width: 320,
-        height: 640,
-        logging: false,
-        useCORS: true,
-        allowTaint: true
-      })
-
-      // Restore transform and active states
-      phoneScreen.style.transform = originalTransform
-      setActiveImageId(currentActiveImageId)
-      setActiveTextId(currentActiveTextId)
+      // Use direct canvas rendering instead of html2canvas
+      const screenCanvas = await captureDesignDirectly()
 
       // Final dimensions: 600x1000 (frame size)
       const finalWidth = 600
@@ -2097,36 +2288,21 @@ function App() {
       
       // Create final canvas
       const previewCanvas = document.createElement('canvas')
-      previewCanvas.width = finalWidth
-      previewCanvas.height = finalHeight
+      previewCanvas.width = finalWidth * 2  // 1200 for scale
+      previewCanvas.height = finalHeight * 2 // 2000 for scale
       const ctx = previewCanvas.getContext('2d')
 
-      const screenWidth = 500
-      const screenHeight = 1000
-      const xOffset = (finalWidth - screenWidth) / 2 // (600 - 500) / 2 = 50
+      // Draw the captured design (already at 600x1000 with design elements positioned correctly)
+      ctx.drawImage(screenCanvas, 0, 0)
 
-      // Draw phone-case.png as background
-      await new Promise((resolve, reject) => {
-        const bgImg = new Image()
-        bgImg.crossOrigin = 'anonymous'
-        bgImg.onload = () => {
-          ctx.drawImage(bgImg, xOffset, 0, screenWidth, screenHeight)
-          resolve()
-        }
-        bgImg.onerror = reject
-        bgImg.src = phoneCaseUrl
-      })
-
-      // Draw the design elements on top
-      ctx.drawImage(screenCanvas, xOffset, 0, screenWidth, screenHeight)
-
-      // Draw the frame on top at 600x1000 (original size)
+      // Draw the frame on top
+      const phoneFrameImg = document.querySelector('.phone-case-frame img')
       if (phoneFrameImg) {
         await new Promise((resolve, reject) => {
           const frameImg = new Image()
           frameImg.crossOrigin = 'anonymous'
           frameImg.onload = () => {
-            ctx.drawImage(frameImg, 0, 0, finalWidth, finalHeight)
+            ctx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
             resolve()
           }
           frameImg.onerror = reject
@@ -3013,7 +3189,7 @@ function App() {
             </div>
             {/* Phone Case Frame Overlay */}
             <div className="phone-case-frame">
-              <img src={frameUrl} alt="Phone case frame" />
+              <img src={generatedFrameUrl} alt="Phone case frame" />
             </div>
           </div>
 
@@ -3225,7 +3401,7 @@ function App() {
                 <div className="text-edit-detail">
                   <div className="detail-content">
                     <select
-                      value={placedTexts.find(t => t.id === activeTextId)?.fontFamily || 'Arial'}
+                      value={placedTexts.find(t => t.id === activeTextId)?.fontFamily || 'Poppins'}
                       onChange={(e) => {
                         setPlacedTexts(prev => prev.map(text => 
                           text.id === activeTextId
@@ -3235,16 +3411,23 @@ function App() {
                       }}
                       className="font-family-select-large"
                     >
-                      <option value="Arial">Arial</option>
-                      <option value="Helvetica">Helvetica</option>
-                      <option value="Times New Roman">Times New Roman</option>
-                      <option value="Georgia">Georgia</option>
-                      <option value="Courier New">Courier New</option>
-                      <option value="Verdana">Verdana</option>
-                      <option value="Impact">Impact</option>
-                      <option value="Comic Sans MS">Comic Sans MS</option>
-                      <option value="Trebuchet MS">Trebuchet MS</option>
-                      <option value="Palatino">Palatino</option>
+                      <option value="Anton">Anton</option>
+                      <option value="Bangers">Bangers</option>
+                      <option value="Cinzel">Cinzel</option>
+                      <option value="Comforter Brush">Comforter Brush</option>
+                      <option value="Dancing Script">Dancing Script</option>
+                      <option value="Fuggles">Fuggles</option>
+                      <option value="Great Vibes">Great Vibes</option>
+                      <option value="Leckerli One">Leckerli One</option>
+                      <option value="Luckiest Guy">Luckiest Guy</option>
+                      <option value="Montserrat">Montserrat</option>
+                      <option value="Noto Serif">Noto Serif</option>
+                      <option value="Pacifico">Pacifico</option>
+                      <option value="Poppins">Poppins</option>
+                      <option value="Roboto">Roboto</option>
+                      <option value="Sacramento">Sacramento</option>
+                      <option value="Source Code Pro">Source Code Pro</option>
+                      <option value="Ubuntu Mono">Ubuntu Mono</option>
                     </select>
                   </div>
                 </div>

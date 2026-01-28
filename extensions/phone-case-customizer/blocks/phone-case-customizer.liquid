@@ -2,23 +2,166 @@
 <!-- No need to set SHOPIFY_APP_URL anymore! App Proxy handles routing -->
 
 <div class="phone-case-customizer-wrapper">
-  <!-- Trigger Button -->
-  <button id="customize-phone-case-btn" class="customize-btn">
-    🎨 {{ block.settings.button_text }} <span style="color: pink;">●</span>
-  </button>
+  <!-- Trigger Button - Only show if product has the tag -->
+  {% if product.tags contains 'dsn-editable-true' %}
+    <button id="customize-phone-case-btn" class="customize-btn">
+      🎨 {{ block.settings.button_text }} <span style="color: pink;">●</span>
+    </button>
+  {% endif %}
 
   <!-- Modal Container -->
   <div id="phone-case-modal" class="phone-case-modal" style="visibility:hidden;opacity:0;">
+    <!-- Prevent page zoom in modal -->
+    <style>
+      #phone-case-modal {
+        touch-action: pan-x pan-y !important;
+        -ms-touch-action: pan-x pan-y !important;
+      }
+      #phone-case-modal * {
+        touch-action: inherit !important;
+      }
+    </style>
+    
     <!-- Close button is now created by React component for proper z-index stacking -->
+    
+    {% comment %} 
+      Use variant-specific image for background
+      - If variant has featured_image, use it
+      - Otherwise fall back to first product image
+    {% endcomment %}
+    
+    {% if product.selected_or_first_available_variant.featured_image %}
+      {% assign background_url = product.selected_or_first_available_variant.featured_image | image_url: width: 600 %}
+      {% assign product_image_url = product.selected_or_first_available_variant.featured_image | image_url: width: 600 %}
+    {% elsif product.images.size > 0 %}
+      {% assign background_url = product.images[0] | image_url: width: 600 %}
+      {% assign product_image_url = product.images[0] | image_url: width: 600 %}
+    {% else %}
+      {% assign background_url = 'phone-case.png' | asset_url %}
+      {% assign product_image_url = '' %}
+    {% endif %}
+    
+    {% assign frame_url = 'phone-case-frame.png' | asset_url %}
+    
     <div id="phone-case-root" 
-         data-frame-url="{{ 'phone-case-frame.png' | asset_url }}" 
-         data-phone-case-url="{{ 'phone-case.png' | asset_url }}"
+         data-frame-url="{{ frame_url }}"
+         data-phone-case-url="{{ background_url }}"
+         data-product-image-url="{{ product_image_url }}"
+         data-variant-id="{{ product.selected_or_first_available_variant.id }}"
          data-designs-url="{{ 'pre-design-images.json' | asset_url }}" 
          data-theme-color="{{ block.settings.theme_color }}" 
          data-product-price="{{ product.selected_or_first_available_variant.price | money }}" 
          data-product-compare-price="{{ product.selected_or_first_available_variant.compare_at_price | money }}"></div>
   </div>
 </div>
+
+<script>
+// Debug: Log product information
+console.log('=== PRODUCT DEBUG INFO ===');
+console.log('Product object:', {{ product | json }});
+console.log('Product title:', '{{ product.title }}');
+console.log('Product images count:', {{ product.images.size }});
+console.log('Product images:', [
+  {% for image in product.images %}
+    {
+      src: '{{ image.src }}',
+      alt: '{{ image.alt }}',
+      width: {{ image.width }},
+      height: {{ image.height }},
+      position: {{ forloop.index }}
+    }{% unless forloop.last %},{% endunless %}
+  {% endfor %}
+]);
+console.log('Selected variant:', {
+  id: '{{ product.selected_or_first_available_variant.id }}',
+  title: '{{ product.selected_or_first_available_variant.title }}',
+  featured_image: '{{ product.selected_or_first_available_variant.featured_image.src }}',
+  price: '{{ product.selected_or_first_available_variant.price | money }}'
+});
+console.log('Product metafields:', {
+  phone_model: '{{ product.metafields.custom.phone_model }}',
+  phone_case_frame: '{{ product.metafields.custom.phone_case_frame }}',
+  phone_case_background: '{{ product.metafields.custom.phone_case_background }}'
+});
+console.log('Product tags:', {{ product.tags | json }});
+console.log('=========================');
+console.log('Data attributes set:');
+console.log('  background_url:', '{{ background_url }}');
+console.log('  frame_url:', '{{ frame_url }}');
+console.log('=========================');
+
+// Listen for Shopify variant change events and update data attributes
+(function() {
+  const rootElement = document.getElementById('phone-case-root');
+  if (!rootElement) return;
+
+  // Store product variants data for quick lookup
+  const variantsData = {
+    {% for variant in product.variants %}
+      '{{ variant.id }}': {
+        id: '{{ variant.id }}',
+        title: '{{ variant.title }}',
+        {% if variant.featured_image %}
+          backgroundUrl: '{{ variant.featured_image | image_url: width: 600 }}',
+          productImageUrl: '{{ variant.featured_image | image_url: width: 600 }}'
+        {% elsif product.images.size > 0 %}
+          backgroundUrl: '{{ product.images[0] | image_url: width: 600 }}',
+          productImageUrl: '{{ product.images[0] | image_url: width: 600 }}'
+        {% else %}
+          backgroundUrl: '{{ 'phone-case.png' | asset_url }}',
+          productImageUrl: ''
+        {% endif %}
+      }{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  };
+
+  console.log('Variants data loaded:', variantsData);
+
+  // Function to update data attributes when variant changes
+  function updateDataAttributes(variantId) {
+    const variantData = variantsData[variantId];
+    if (variantData) {
+      console.log('Updating data attributes for variant:', variantId, variantData);
+      rootElement.setAttribute('data-variant-id', variantData.id);
+      rootElement.setAttribute('data-phone-case-url', variantData.backgroundUrl);
+      rootElement.setAttribute('data-product-image-url', variantData.productImageUrl);
+    }
+  }
+
+  // Listen for various variant change events
+  document.addEventListener('variant:change', function(event) {
+    console.log('variant:change event:', event);
+    if (event.detail && event.detail.variant && event.detail.variant.id) {
+      updateDataAttributes(event.detail.variant.id.toString());
+    }
+  });
+
+  // Also listen for form changes (variant selector)
+  const variantSelectors = document.querySelectorAll('select[name="id"], input[name="id"]');
+  variantSelectors.forEach(selector => {
+    selector.addEventListener('change', function(e) {
+      console.log('Variant selector changed:', e.target.value);
+      updateDataAttributes(e.target.value);
+    });
+  });
+
+  // Listen for radio button changes (common in modern themes)
+  const variantRadios = document.querySelectorAll('input[type="radio"][name*="option"]');
+  variantRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      // Find the selected variant based on all option selections
+      setTimeout(() => {
+        const selectedVariantInput = document.querySelector('input[name="id"]:checked, select[name="id"]');
+        if (selectedVariantInput) {
+          const variantId = selectedVariantInput.value || selectedVariantInput.options[selectedVariantInput.selectedIndex].value;
+          console.log('Variant selected via options:', variantId);
+          updateDataAttributes(variantId);
+        }
+      }, 50);
+    });
+  });
+})();
+</script>
 
 <script>
 // Fetch admin theme color settings and override block setting
@@ -98,6 +241,11 @@
   const modal = document.getElementById('phone-case-modal');
   const btn = document.getElementById('customize-phone-case-btn');
   
+  if (!modal || !btn) {
+    console.error('Modal or button not found:', { modal, btn });
+    return;
+  }
+  
   let reactMounted = false;
   let modalMovedToBody = false;
   
@@ -111,6 +259,7 @@
   
   // Open modal
   btn.addEventListener('click', function() {
+    console.log('Customize button clicked');
     ensureModalInBody();
     modal.style.visibility = 'visible';
     modal.style.opacity = '1';
@@ -169,7 +318,9 @@
           '_main': imageUrl,
           '_image1': emptyCaseUrl,
           '_print-image': designOnlyUrl,
-          'Customized': 'Yes'
+          '_design_link': imageUrl,  // Add link property for easy access
+          'Customized': 'Yes',
+          'View Design': imageUrl  // User-visible property with link
         },
         // Set the custom image as the line item image
         image: imageUrl
@@ -279,9 +430,14 @@
 })();
 </script>
 
+<!-- Load Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bangers&family=Cinzel:wght@400;700&family=Comforter+Brush&family=Dancing+Script:wght@400;700&family=Fuggles&family=Great+Vibes&family=Leckerli+One&family=Luckiest+Guy&family=Montserrat:wght@400;700&family=Noto+Serif:wght@400;700&family=Pacifico&family=Poppins:wght@400;700&family=Roboto:wght@400;700&family=Sacramento&family=Source+Code+Pro:wght@400;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+
 <!-- Load React app directly from theme extension assets -->
-<link rel="stylesheet" href="{{ 'phone-case-customizer.css' | asset_url }}?v=186">
-<script src="{{ 'phone-case-customizer.js' | asset_url }}?v=186" defer></script>
+<link rel="stylesheet" href="{{ 'phone-case-customizer.css' | asset_url }}?v=270">
+<script src="{{ 'phone-case-customizer.js' | asset_url }}?v=270" defer></script>
 
 {% schema %}
 {

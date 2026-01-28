@@ -1,0 +1,602 @@
+{
+    "productsJSON": [
+        [
+            {
+                "productTitle": "iPhone 11 Kılıf Tasarla Lansman Dokulu Kılıf",
+                "productThumbnail": "https://www.wolfdizayn.com/idea/pp/38/myassets/products/009/3.png",
+                "title": "Kal\u0131p",
+                "thumbnail": "https://www.wolfdizayn.com/idea/pp/38/myassets/products/009/3.png",
+                "options": {
+                    "customAdds": {
+                        "uploads": true,
+                        "texts": true,
+                        "designs": true
+                    }
+                },
+                "elements": [
+                    {
+                        "title": "Kal\u0131p",
+                        "source": "https://www.wolfdizayn.com/idea/pp/38/myassets/products/009/3.png",
+                        "type": "image",
+                        "parameters": {
+                            "left": 300,
+                            "top": 500,
+                            "originX": "center",
+                            "originY": "center",
+                            "z": -1,
+                            "fill": false,
+                            "colorLinkGroup": false,
+                            "draggable": false,
+                            "rotatable": false,
+                            "resizable": false,
+                            "removable": false,
+                            "flipX": false,
+                            "flipY": false,
+                            "zChangeable": false,
+                            "scaleX": 1,
+                            "scaleY": 1,
+                            "uniScalingUnlockable": false,
+                            "angle": 0,
+                            "price": "22",
+                            "autoCenter": false,
+                            "replaceInAllViews": false,
+                            "autoSelect": false,
+                            "topped": false,
+                            "boundingBoxMode": "clipping",
+                            "opacity": 1,
+                            "excludeFromExport": false,
+                            "locked": true,
+                            "showInColorSelection": false,
+                            "boundingBox": "",
+                            "fixed": false,
+                            "resizeToW": "0",
+                            "resizeToH": "0",
+                            "scaleMode": "fit",
+                            "minScaleLimit": 0.01000000000000000020816681711721685132943093776702880859375,
+                            "advancedEditing": false,
+                            "uploadZone": false,
+                            "uploadZoneMovable": false,
+                            "uploadZoneRemovable": false,
+                            "customAdds": []
+                        }
+                    },
+                    {
+                        "title": "Çerçeve",
+                        "source": "https://www.wolfdizayn.com/idea/pp/38/myassets/products/009/4.png",
+                        "type": "image",
+                        "parameters": {
+                            "left": 300,
+                            "top": 500,
+                            "originX": "center",
+                            "originY": "center",
+                            "z": -1,
+                            "fill": false,
+                            "colorLinkGroup": false,
+                            "draggable": false,
+                            "rotatable": false,
+                            "resizable": false,
+                            "removable": false,
+                            "flipX": false,
+                            "flipY": false,
+                            "zChangeable": false,
+                            "scaleX": 1,
+                            "scaleY": 1,
+                            "uniScalingUnlockable": false,
+                            "angle": 0,
+                            "price": 0,
+                            "autoCenter": false,
+                            "replaceInAllViews": false,
+                            "autoSelect": false,
+                            "topped": true,
+                            "boundingBoxMode": "clipping",
+                            "opacity": 1,
+                            "excludeFromExport": false,
+                            "locked": true,
+                            "showInColorSelection": false,
+                            "boundingBox": "",
+                            "fixed": false,
+                            "resizeToW": "0",
+                            "resizeToH": "0",
+                            "scaleMode": "fit",
+                            "minScaleLimit": 0.01000000000000000020816681711721685132943093776702880859375,
+                            "advancedEditing": false,
+                            "uploadZone": false,
+                            "uploadZoneMovable": false,
+                            "uploadZoneRemovable": false,
+                            "customAdds": []
+                        }
+                    }
+                ]
+            }
+        ]
+    ],
+    "fileServerURL": "https://kendintasarla.wolfdizayn.com/wolfdizayn/designer/upload.php?id=1000123456",
+    "langJSON": {
+        "toolbar": {
+            "fill": "Doldur",
+            "font_family_search": "Fontlarda Ara",
+            "transform": "D\u00f6n\u00fc\u015ft\u00fcr",
+            "position": "Pozisyon",
+            "move_up": "Yukar\u0131 Ta\u015f\u0131",
+            "move_down": "A\u015fa\u011f\u0131 Ta\u015f\u0131",
+            "reset": "S\u0131f\u0131rla",
+            "text_size_spacing": "Boyut ve Aralık",
+            "line_spacing": "Satır Aralığı",
+            "bold": "Kal\u0131n",
+            "italic": "\u0130talik",
+            "underline": "Alt \u00c7izgi",
+            "stroke": "Stroke",
+            "curved_text": "E\u011fri Metin",
+            "edit_text": "Metni D\u00fczenle",
+            "color": "Renk",
+            "patterns": "Desenler",
+            "transparency": "\u015eeffafl\u0131k",
+            "align_left": "Sola Hizala",
+            "align_top": "\u00dcste Hizala",
+            "align_right": "Sa\u011fa Hizala",
+            "align_bottom": "Alta Hizala",
+            "center_h": "Merkez Yatay",
+            "center_v": "Merkez Dikey",
+            "flip_h": "Yatay \u00c7evir",
+            "flip_v": "Dikey \u00c7evir",
+            "radius": "Yar\u0131\u00e7ap",
+            "letter_spacing": "Harf Bo\u015flu\u011fu",
+            "advanced_editing": "Geli\u015fmi\u015f D\u00fczenleme",
+            "text_transform": "Metin D\u00f6n\u00fc\u015ft\u00fcrme",
+            "stroke_width": "Genişlik",
+            "shadow": "G\u00f6lge",
+            "shadow_blur": "Bulan\u0131kl\u0131k",
+            "shadow_offset_x": "Ofset X",
+            "shadow_offset_y": "Ofset Y",
+            "remove_shadow": "Gölge Kaldır",
+            "font": "Font",
+            "remove": "Kald\u0131r",
+            "rotate": "\u00c7evir",
+            "scalex": "Scale-X",
+            "scaley": "Scale-Y",
+            "duplicate": "Kopyala",
+            "text_format": "Format",
+            "font_size": "Yaz\u0131 Boyutu",
+            "arrange": "Düzenle",
+            "align": "Hizalama",
+            "filters": "Filters",
+            "remove_background": "Arkaplan Kaldır",
+            "crop": "Kes",
+            "sub_panel_back": "Geri"
+        },
+        "actions": {
+            "reset_product": "S\u0131f\u0131rla",
+            "zoom": "Yakla\u015ft\u0131r",
+            "download": "\u0130ndir",
+            "download_current_view": "Yaln\u0131zca ge\u00e7erli g\u00f6sterilen g\u00f6r\u00fcn\u00fcm\u00fc d\u0131\u015fa aktar",
+            "info": "Bilgi",
+            "info_content": "Yüklenen resimler çözünürlük olarak ne kadar net ise baskıda aynı netlikte çıkar. Tasarımlardan Seçin Bölümünü Kullanarak Kendi Tarzınızı Yansıtan Kılfınızı Oluşturabilirsiniz.",
+            "print": "Bast\u0131r",
+            "undo": "Geri Al",
+            "redo": "\u0130leri Al",
+            "snap": "Merkeze Yerle\u015ftir",
+            "preview_lightbox": "\u00d6n izleme",
+            "ruler": "Cetvel",
+            "previous_view": "\u00d6nceki G\u00f6r\u00fcn\u00fcm",
+            "next_view": "Sonraki G\u00f6r\u00fcn\u00fcm",
+            "guided_tour": "Start Guided Tour",
+            "menu_file": "Dosya",
+            "menu_more": "Daha Fazla",
+            "modal_done": "Sepete Ekle",
+            "qr_code": "QR Kod",
+            "save_load": "Kayıtlı Tasarımlar"
+        },
+        "modules": {
+            "products": "\u00dcr\u00fcn\u00fc De\u011fi\u015ftir",
+            "products_confirm_replacement": "\u00dcr\u00fcn\u00fc de\u011fi\u015ftirmek istedi\u011finizden eminmisiniz?",
+            "products_confirm_button": "Evet l\u00fctfen!",
+            "images": "Resim Ekle",
+            "upload_zone": "Resim Y\u00fcklemek i\u00e7in buraya t\u0131klay\u0131n veya b\u0131rak\u0131n",
+            "facebook_select_album": "Bir Alb\u00fcm Se\u00e7in",
+            "text": "Yaz\u0131 Ekle",
+            "text_input_placeholder": "Bir metin girin",
+            "text_add_btn": "Yaz\u0131 Ekle",
+            "designs": "Tasar\u0131mlardan Se\u00e7in",
+            "designs_search_in": "Ara",
+            "manage_layers": "Katmanları Yönet",
+            "images_agreement": "G\u00f6rselleri kullanma haklar\u0131na sahibim.",
+            "images_confirm_button": "Onayla",
+            "images_pdf_upload_info": "PDF'den g\u00f6r\u00fcnt\u00fcler olu\u015fturuluyor...",
+            "pixabay_search": "Pixabay kitapl\u0131\u011f\u0131nda ara",
+            "text_layers": "Metin Katmanlar\u0131",
+            "text_layers_clear": "Temizle",
+            "layouts": "D\u00fczenle",
+            "layouts_confirm_replacement": "Ge\u00e7erli g\u00f6r\u00fcn\u00fcmdeki t\u00fcm \u00f6\u011feleri de\u011fi\u015ftirece\u011finizden emin misiniz?",
+            "layouts_confirm_button": "Evet anlad\u0131m!",
+            "save_load": "Kayıtlı Tasarımlar",
+            "save_load_add_btn": "Tasarımı Kaydet",
+            "save_load_input_placeholder": "İsteğe bağlı: Bir başlık girin",
+            "qr_code_input": "Url veya yazı giriniz...",
+            "qr_code_add_btn": "QR Kod Ekle",
+            "names_numbers": "İsimler ve Numaralar",
+            "names_numbers_add_new": "Yeni Ekle",
+            "names_numbers_remove": "Kaldır",
+            "browse_file": "Resim Ekle",
+            "uploads": "Yüklenenler",
+            "text_to_images": "Metinden Görüntüye",
+            "text_to_images_generate": "Oluştur",
+            "text_to_images_info": "İstediğiniz görselin açıklamasını girin, biz sizin için oluşturalım."
+        },
+        "misc": {
+            "initializing": "\u00dcr\u00fcn Tasar\u0131mc\u0131s\u0131 Ba\u015fl\u0131yor",
+            "out_of_bounding_box": "\u00d6\u011feyi Alan i\u00e7inde hareket ettirin!",
+            "product_saved": "\u00dcr\u00fcn Kaydedildi!",
+            "loading_image": "Resim Y\u00fckleniyor...",
+            "uploaded_image_size_alert": "\u00dczg\u00fcn\u00fcz! Ancak y\u00fcklenen resim boyutu, boyut g\u00f6stergemize uymuyor.<br \/>Minimum Geni\u015flik: %minW piksel<br \/>Minimum Y\u00fckseklik: %minH piksel<br \/>Maksimum Geni\u015flik: %maxW piksel<br \/>Maksimum Y\u00fckseklik: %maxH piksel",
+            "minimum_dpi_info": "JPEG g\u00f6r\u00fcnt\u00fcs\u00fc, gerekli %dpi DPI de\u011ferine sahip de\u011fil.",
+            "maximum_size_info": "%filename resmi %mbMB olan maksimum dosya boyutunu a\u015f\u0131yor.",
+            "customization_required_info": "Varsay\u0131lan tasar\u0131m\u0131 \u00f6zelle\u015ftirmeniz gerekiyor!",
+            "reset_confirm": "Her \u015feyi s\u0131f\u0131rlamak istedi\u011finizden emin misiniz?",
+            "popup_blocker_alert": "L\u00fctfen a\u00e7\u0131l\u0131r pencere engelleyicinizi devre d\u0131\u015f\u0131 b\u0131rak\u0131n ve tekrar deneyin.",
+            "guided_tour_back": "Geri",
+            "guided_tour_next": "\u0130leri",
+            "image_quality_rating_low": "D\u00fc\u015f\u00fck g\u00f6r\u00fcnt\u00fc kalitesi",
+            "image_quality_rating_mid": "Orta g\u00f6r\u00fcnt\u00fc kalitesi",
+            "image_quality_rating_high": "Y\u00fcksek g\u00f6r\u00fcnt\u00fc kalitesi",
+            "view_duplicate": "Çoğalt",
+            "view_delete": "Sil",
+            "view_lock": "Kilitle",
+            "view_unlock": "Kilidi A\u00e7",
+            "view_edit_size": "Boyutu Ayarla",
+            "dynamic_views_add_blank": "Boş Sayfa Ekle",
+            "dynamic_views_add_from_layouts": "Düzenlerden Sayfa Ekle",
+            "dynamic_views_width": "Genişlik",
+            "dynamic_views_height": "Yükseklik",
+            "dynamic_views_add_view": "Sayfa Ekle",
+            "bulk_add_variations_title": "Toplu Sıralama",
+            "bulk_add_variations_add": "Ekle",
+            "bulk_add_variations_term": "Lütfen Toplu Sıralama panelindeki tüm varyasyonları doğru şekilde ayarlayın!",
+            "customization_button": "Ki\u015fiselle\u015ftir",
+            "shortcode_order:success_sent": "Sipariş başarıyla gönderildi!",
+            "shortcode_order:fail_sent": "Sipari\u015f g\u00f6nderilemedi. L\u00fctfen tekrar deneyin veya site ile ileti\u015fime ge\u00e7in!",
+            "shortcode_form:send": "Gönder",
+            "shortcode_form:name_placeholder": "\u0130sminizi buraya girin",
+            "shortcode_form:email_placeholder": "E-postanızı girin",
+            "login_required_info": "Resim y\u00fcklemek i\u00e7in giri\u015f yapmal\u0131s\u0131n\u0131z!",
+            "account_storage:login_required": "L\u00fctfen hesab\u0131n\u0131za giri\u015f yap\u0131n!",
+            "account_storage:products_loaded": "Kaydedilen \u00dcr\u00fcnler Y\u00fcklendi.",
+            "account_storage:saved_products": "Kaydedilen \u00dcr\u00fcnler",
+            "pro_export:download": "Yazdırmaya Hazır Dosyayı İndirin",
+            "share:_button": "Tasar\u0131m Payla\u015f",
+            "share:_process": "Sizin i\u00e7in payla\u015f\u0131lacak benzersiz bir URL olu\u015fturulacak...",
+            "share:_default_text": "Tasar\u0131m\u0131ma g\u00f6z at\u0131n!",
+            "dpi_warning": "Görüntünün çözünürlüğü düşük. Daha iyi baskı sonuçları için daha büyük bir resim yükleyin veya ölçeği küçültün.",
+            "ai_upscale_btn": "Upscale with AI",
+            "ai_upscale_success": "Image Upscaled",
+            "ai_remove_bg_success": "Arkaplan Kaldırıldı",
+            "view_unlocked_info": "Görünümün kilidi açıldı"
+        },
+        "woocommerce": {
+            "catalog:_add_to_cart": "Ki\u015fiselle\u015ftir",
+            "cart:_re-edit product": "Yeniden d\u00fczenlemek i\u00e7in buraya t\u0131klay\u0131n",
+            "get_a_quote": "fiyat teklifi al",
+            "order:_view_customized_product": "\u00d6zelle\u015ftirilmi\u015f \u00dcr\u00fcn\u00fc G\u00f6r\u00fcnt\u00fcle",
+            "save_order": "Sipari\u015fi Kaydet",
+            "saving_order": "Sipari\u015f Kaydediliyor",
+            "order_saved": "Sipari\u015f Kaydedildi",
+            "order_saving_failed": "Sipari\u015f Kaydedilemedi. L\u00fctfen tekrar deneyin!",
+            "loading_product": "\u00dcr\u00fcn y\u00fckleniyor...",
+            "product_loading_fail": "\u00dcr\u00fcn y\u00fcklenemedi. L\u00fctfen tekrar deneyin!",
+            "cross_sells:headline": "Tasar\u0131m\u0131n\u0131z\u0131 ba\u015fka bir \u00fcr\u00fcnde deneyin",
+            "add_to_cart": "\u00dcr\u00fcn sepete eklenecektir.",
+            "sku": "SKU: ",
+            "cart_item_not_found": "\u00dczg\u00fcn\u00fcz, ancak sepet \u00f6\u011fesi bulunamad\u0131!",
+            "add_to_cart:save": "Değişliklikleri Kaydet"
+        }
+    },
+    "fonts": [
+        {
+            "name": "Anton",
+            "url": "google"
+        },
+        {
+            "name": "Bangers",
+            "url": "google"
+        },
+        {
+            "name": "Cinzel",
+            "variants": [
+                "bold"
+            ],
+            "url": "google"
+        },
+        {
+            "name": "Comforter Brush",
+            "url": "google"
+        },
+        {
+            "name": "Dancing Script",
+            "variants": [
+                "bold"
+            ],
+            "url": "google"
+        },
+        {
+            "name": "Fuggles",
+            "url": "google"
+        },
+        {
+            "name": "Great Vibes",
+            "url": "google"
+        },
+        {
+            "name": "Leckerli One",
+            "url": "google"
+        },
+        {
+            "name": "Luckiest Guy",
+            "url": "google"
+        },
+        {
+            "name": "Montserrat",
+            "variants": [
+                "bold",
+                "italic",
+                "bold-italic"
+            ],
+            "url": "google"
+        },
+        {
+            "name": "Noto Serif",
+            "variants": [
+                "bold",
+                "italic",
+                "bold-italic"
+            ],
+            "url": "google"
+        },
+        {
+            "name": "Pacifico",
+            "url": "google"
+        },
+        {
+            "name": "Poppins",
+            "variants": [
+                "bold",
+                "italic",
+                "bold-italic"
+            ],
+            "url": "google"
+        },
+        {
+            "name": "Roboto",
+            "variants": [
+                "bold",
+                "italic",
+                "bold-italic"
+            ],
+            "url": "google"
+        },
+        {
+            "name": "Sacramento",
+            "url": "google"
+        },
+        {
+            "name": "Source Code Pro",
+            "variants": [
+                "bold",
+                "italic",
+                "bold-italic"
+            ],
+            "url": "google"
+        },
+        {
+            "name": "Ubuntu Mono",
+            "variants": [
+                "bold",
+                "italic",
+                "bold-italic"
+            ],
+            "url": "google"
+        }
+    ],
+    "facebookAppId": "",
+    "instagramClientId": "",
+    "hexNames": [],
+    "replaceInitialElements": 0,
+    "uploadZonesTopped": 1,
+    "mainBarContainer": ".fpd-main-bar-position",
+    "responsive": 1,
+    "loadFirstProductInStage": 1,
+    "watermark": "",
+    "unsavedProductAlert": 0,
+    "hideDialogOnAdd": 1,
+    "fitImagesInCanvas": 1,
+    "inCanvasTextEditing": 1,
+    "openTextInputOnSelect": 0,
+    "saveActionBrowserStorage": 0,
+    "uploadAgreementModal": 0,
+    "autoOpenInfo": 0,
+    "allowedImageTypes": [
+        "jpeg",
+        "png",
+        "svg",
+        "pdf"
+    ],
+    "replaceColorsInColorGroup": 0,
+    "pixabayApiKey": "",
+    "pixabayHighResImages": 0,
+    "pixabayLang": "tr",
+    "sizeTooltip": 0,
+    "applyFillWhenReplacing": 1,
+    "applySizeWhenReplacing": 0,
+    "highlightEditableObjects": "",
+    "layouts": [],
+    "disableTextEmojis": 1,
+    "smartGuides": 0,
+    "colorPickerPalette": [],
+    "customizationRequiredRule": "none",
+    "swapProductConfirmation": 1,
+    "toolbarTextareaPosition": false,
+    "textLinkGroupProps": [],
+    "dynamicDesigns": {},
+    "textTemplates": [],
+    "multiSelection": 1,
+    "mobileGesturesBehaviour": "none",
+    "cornerControlsStyle": "advanced",
+    "imageQualityRatings": [],
+    "downloadFilename": "Product",
+    "autoFillUploadZones": 0,
+    "dragDropImagesToUploadZones": 0,
+    "customImageParameters": {
+        "colors": "#000000,#FFFFFF,#ECF0F1",
+        "autoCenter": true,
+        "left": 0,
+        "top": 0,
+        "z": -1,
+        "replaceInAllViews": false,
+        "draggable": true,
+        "rotatable": true,
+        "resizable": true,
+        "zChangeable": true,
+        "autoSelect": false,
+        "topped": false,
+        "uniScalingUnlockable": false,
+        "copyable": false,
+        "boundingBoxMode": "clipping",
+        "scaleMode": "fit",
+        "price": 0,
+        "minScaleLimit": 0.01,
+        "removable": true,
+        "minW": 100,
+        "minH": 100,
+        "maxW": 10000,
+        "maxH": 10000,
+        "maxSize": 30,
+        "minDPI": 32,
+        "resizeToW": "0",
+        "resizeToH": "0",
+        "advancedEditing": false
+    },
+    "elementParameters": {
+        "originX": "center",
+        "originY": "center"
+    },
+    "imageParameters": {
+        "colors": "",
+        "colorLinkGroup": "",
+        "colorPrices": [],
+        "replaceInAllViews": 0,
+        "patterns": "",
+        "padding": 0
+    },
+    "textParameters": {
+        "padding": 10,
+        "fontFamily": "Montserrat",
+        "colorPrices": [],
+        "replaceInAllViews": 0,
+        "patterns": "",
+        "strokeColors": [],
+        "colors": "",
+        "maxCurveRadius": 400
+    },
+    "customTextParameters": {
+        "colors": "#FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000,#00FF00,#008000,#00FFFF,#008080,#0000FF,#000080,#FF00FF,#800080",
+        "fill": "#000000",
+        "autoCenter": true,
+        "left": 0,
+        "top": 0,
+        "z": -1,
+        "replaceInAllViews": false,
+        "draggable": true,
+        "rotatable": true,
+        "resizable": true,
+        "zChangeable": true,
+        "autoSelect": false,
+        "topped": false,
+        "uniScalingUnlockable": false,
+        "fontSize": 18,
+        "minFontSize": 30,
+        "maxFontSize": 1000,
+        "widthFontSize": 0,
+        "textAlign": "center",
+        "maxLength": 0,
+        "maxLines": 0,
+        "curvable": true,
+        "curveReverse": false,
+        "curveSpacing": 10,
+        "curveRadius": 80,
+        "maxCurveRadius": 400,
+        "boundingBoxMode": "clipping",
+        "price": 0,
+        "removable": true
+    },
+    "fabricCanvasOptions": {
+        "allowTouchScrolling": 0,
+        "perPixelTargetFind": 0
+    },
+    "qrCodeProps": {
+        "price": 0,
+        "resizeToW": 0,
+        "resizeToH": 0,
+        "draggable": 1,
+        "resizable": 1,
+        "boundingBox": null,
+        "boundingBoxMode": "clipping"
+    },
+    "boundingBoxProps": {
+        "strokeWidth": 1
+    },
+    "guidedTour": null,
+    "namesNumbersDropdown": [],
+    "namesNumbersEntryPrice": 0,
+    "colorSelectionPlacement": "",
+    "enableDynamicViews": 0,
+    "dynamicViewsOptions": {
+        "unit": "mm",
+        "formats": [],
+        "pricePerArea": 0,
+        "minWidth": 0,
+        "minHeight": 0,
+        "maxWidth": 600,
+        "maxHeight": 1000
+    },
+    "bulkVariationsPlacement": "",
+    "bulkVariations": [],
+    "pricingRules": [],
+    "canvasHeight": "auto",
+    "responsiveBreakpoints": {
+        "small": 768,
+        "medium": 1024
+    },
+    "customTextAsTextbox": 0,
+    "viewThumbnailsWrapper": "",
+    "rulerUnit": "px",
+    "rulerPosition": "canvas",
+    "rulerFixed": 0,
+    "cropMasks": [],
+    "stageWidth": 600,
+    "stageHeight": 1000,
+    "gridColumns": "",
+    "initialActiveModule": "",
+    "selectedColor": "#f5f5f5",
+    "boundingBoxColor": "#005ede",
+    "outOfBoundaryColor": "#990000",
+    "cornerIconColor": "#000000",
+    "toolbarPlacement": "smart",
+    "mainBarModules": [
+        "images",
+        "text",
+        "designs",
+        "manage-layers"
+    ],
+    "actions": {
+        "left": [
+            "download",
+            "print",
+            "preview-lightbox"
+        ],
+        "center": [
+            "undo",
+            "redo"
+        ],
+        "right": [
+            "info"
+        ]
+    }
+}

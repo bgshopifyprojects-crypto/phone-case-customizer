@@ -16,6 +16,10 @@
 .phone-case-modal {
   box-sizing: border-box;
   
+  /* Prevent page zoom on mobile - only allow design element manipulation */
+  touch-action: pan-x pan-y;
+  -ms-touch-action: pan-x pan-y;
+  
   /* CSS Custom Properties for Responsive Design */
   
   /* Breakpoint values (for reference in JS if needed) */
@@ -57,6 +61,8 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  /* Prevent zoom on all elements by default */
+  touch-action: inherit;
 }
 
 /* Fix iOS Safari default button and input styling */
@@ -1305,6 +1311,92 @@
   cursor: pointer;
 }
 
+/* Style each font option in its own typeface */
+.font-family-select-large option[value="Anton"] {
+  font-family: 'Anton', sans-serif;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Bangers"] {
+  font-family: 'Bangers', cursive;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Cinzel"] {
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Comforter Brush"] {
+  font-family: 'Comforter Brush', cursive;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Dancing Script"] {
+  font-family: 'Dancing Script', cursive;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Fuggles"] {
+  font-family: 'Fuggles', cursive;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Great Vibes"] {
+  font-family: 'Great Vibes', cursive;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Leckerli One"] {
+  font-family: 'Leckerli One', cursive;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Luckiest Guy"] {
+  font-family: 'Luckiest Guy', cursive;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Montserrat"] {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Noto Serif"] {
+  font-family: 'Noto Serif', serif;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Pacifico"] {
+  font-family: 'Pacifico', cursive;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Poppins"] {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Roboto"] {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Sacramento"] {
+  font-family: 'Sacramento', cursive;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Source Code Pro"] {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 1rem;
+}
+
+.font-family-select-large option[value="Ubuntu Mono"] {
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 1rem;
+}
+
 /* Mobile: Same size */
 @media (max-width: 767px) {
   .font-family-select-large {
@@ -1345,6 +1437,7 @@
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   background: white;
+  color: #333; /* Explicit text color */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1366,18 +1459,20 @@
 .format-btn-large:hover {
   border-color: var(--theme-color);
   background: var(--theme-color-hover-bg);
+  color: var(--theme-color); /* Theme color text on hover */
 }
 
 .format-btn-large.active {
   background: var(--theme-color);
   border-color: var(--theme-color);
-  color: white;
+  color: white; /* White text when active */
 }
 
 .format-btn-large strong,
 .format-btn-large em {
   font-style: normal;
   font-size: 1.2rem;
+  color: inherit; /* Inherit from parent */
 }
 
 /* Format Buttons Grid (for new format menu) */
@@ -1393,6 +1488,7 @@
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   background: white;
+  color: #333; /* Explicit text color */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1405,17 +1501,20 @@
 .format-btn-square:hover {
   border-color: var(--theme-color);
   background: var(--theme-color-hover-bg);
+  color: var(--theme-color); /* Theme color on hover */
 }
 
 .format-btn-square.active {
   background: var(--theme-color);
   border-color: var(--theme-color);
-  color: white;
+  color: white; /* White text when active */
 }
 
 .format-btn-square svg {
   width: 24px;
   height: 24px;
+  stroke: currentColor; /* Use current text color */
+  fill: none;
 }
 
 /* Mobile: Adjust grid */
@@ -1433,26 +1532,57 @@
     width: calc(25% - 0.375rem); /* 4 buttons per row */
     min-height: 48px;
     max-height: 48px;
-    padding: 0.25rem; /* Minimal padding */
+    padding: 0.5rem; /* Better padding */
     min-width: 32px;
+    background: var(--theme-color); /* Blue background like transform buttons */
+    border-color: var(--theme-color);
+    color: white;
+  }
+  
+  .format-btn-square:hover {
+    background: var(--theme-color-dark);
+    border-color: var(--theme-color-dark);
+  }
+  
+  .format-btn-square.active {
+    background: var(--theme-color-dark); /* Darker when active */
+    border-color: var(--theme-color-dark);
+    opacity: 0.8;
   }
   
   .format-btn-square svg {
-    width: 16px; /* Smaller icons */
-    height: 16px;
+    width: 20px; /* Slightly larger icons */
+    height: 20px;
+    stroke: white; /* White icons */
+    fill: white;
   }
   
   .format-btn-large {
     flex: 1; /* Equal width */
-    padding: 0.25rem; /* Minimal padding */
-    min-height: 32px;
-    max-height: 32px;
-    font-size: 0.7rem;
+    padding: 0.5rem; /* Better padding */
+    min-height: 48px;
+    max-height: 48px;
+    font-size: 0.85rem;
+    background: var(--theme-color); /* Blue background like transform buttons */
+    border-color: var(--theme-color);
+    color: white;
+  }
+  
+  .format-btn-large:hover {
+    background: var(--theme-color-dark);
+    border-color: var(--theme-color-dark);
+  }
+  
+  .format-btn-large.active {
+    background: var(--theme-color-dark); /* Darker when active */
+    border-color: var(--theme-color-dark);
+    opacity: 0.8;
   }
   
   .format-btn-large strong,
   .format-btn-large em {
-    font-size: 0.85rem; /* Smaller text */
+    font-size: 1rem; /* Larger text */
+    color: white;
   }
 }
 
@@ -4164,6 +4294,26 @@
     margin: 0.5rem 0 !important;
   }
   
+  /* QR color picker - keep on same line, each takes half width */
+  .qr-color-picker-container {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+  }
+  
+  .qr-color-picker {
+    width: 50% !important;
+    flex: 0 0 50% !important;
+    height: 44px !important;
+  }
+  
+  .qr-color-input {
+    width: 50% !important;
+    flex: 0 0 calc(50% - 0.5rem) !important;
+    padding: 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+
   .hue-slider,
   .saturation-lightness-picker {
     margin-bottom: 0.5rem !important;
