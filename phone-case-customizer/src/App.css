@@ -652,7 +652,7 @@
   width: 100%;
   height: 100%;
   /* Background image set dynamically via JavaScript */
-  background-color: #f0f0f0; /* Light gray fallback */
+  background-color: transparent; /* Transparent - no grey overlay */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
