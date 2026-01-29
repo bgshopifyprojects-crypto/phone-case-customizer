@@ -5,7 +5,7 @@
   <!-- Trigger Button - Only show if product has the tag -->
   {% if product.tags contains 'dsn-editable-true' %}
     <button id="customize-phone-case-btn" class="customize-btn">
-      🎨 {{ block.settings.button_text }} <span style="color: pink;">●</span>
+      <span id="button-icon">🎨</span> <span id="button-text">{{ block.settings.button_text }}</span>
     </button>
   {% endif %}
 
@@ -167,6 +167,9 @@ console.log('=========================');
 // Fetch admin theme color settings and override block setting
 (function() {
   const rootElement = document.getElementById('phone-case-root');
+  const customizeBtn = document.getElementById('customize-phone-case-btn');
+  const buttonIcon = document.getElementById('button-icon');
+  const buttonText = document.getElementById('button-text');
   const settingsUrl = window.location.origin + '/apps/customizer/get-settings';
   
   fetch(settingsUrl)
@@ -177,9 +180,37 @@ console.log('=========================');
         rootElement.setAttribute('data-theme-color', data.themeColor);
         console.log('Theme color loaded from admin settings:', data.themeColor);
       }
+      
+      if (customizeBtn) {
+        // Apply button color with gradient using setProperty to override !important
+        if (data.buttonColor) {
+          const color = data.buttonColor;
+          const gradient = `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`;
+          customizeBtn.style.setProperty('background', gradient, 'important');
+          console.log('Button color loaded from admin settings:', data.buttonColor);
+        }
+        
+        // Apply button text
+        if (data.buttonText && buttonText) {
+          buttonText.textContent = data.buttonText;
+          console.log('Button text loaded from admin settings:', data.buttonText);
+        }
+        
+        // Apply button logo or use palette emoji
+        if (buttonIcon) {
+          if (data.buttonLogoUrl) {
+            // Replace emoji with logo image
+            buttonIcon.innerHTML = `<img src="${data.buttonLogoUrl}" alt="Logo" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">`;
+            console.log('Button logo loaded from admin settings:', data.buttonLogoUrl);
+          } else {
+            // Use palette emoji as default
+            buttonIcon.textContent = '🎨';
+          }
+        }
+      }
     })
     .catch(error => {
-      console.log('Using default theme color from block settings');
+      console.log('Using default colors from block settings');
     });
 })();
 </script>
@@ -209,7 +240,9 @@ console.log('=========================');
     cursor: pointer !important;
     transition: transform 0.2s, box-shadow 0.2s !important;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-    display: inline-block !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
     visibility: visible !important;
     opacity: 1 !important;
     position: relative !important;
@@ -217,6 +250,16 @@ console.log('=========================');
     width: auto !important;
     height: auto !important;
     min-width: 200px !important;
+  }
+  
+  .customize-btn #button-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .customize-btn #button-text {
+    display: inline-block;
   }
 
   .customize-btn:hover {
@@ -307,9 +350,9 @@ console.log('=========================');
   
   // Handle Add to Cart from customizer
   window.addEventListener('customizer:addToCart', async function(e) {
-    const { designId, imageUrl, emptyCaseUrl, designOnlyUrl } = e.detail;
+    const { designId, imageUrl, emptyCaseUrl, designOnlyUrl, elementUrls } = e.detail;
     
-    console.log('Add to cart event received:', { designId, imageUrl, emptyCaseUrl, designOnlyUrl });
+    console.log('Add to cart event received:', { designId, imageUrl, emptyCaseUrl, designOnlyUrl, elementUrls });
     
     // Get the current product variant ID
     const variantId = '{{ product.selected_or_first_available_variant.id }}';
@@ -321,20 +364,29 @@ console.log('=========================');
       return;
     }
     
+    // Build cart properties with element URLs
+    const properties = {
+      '_design_id': designId,
+      '_main': imageUrl,
+      '_image1': emptyCaseUrl,
+      '_print-image': designOnlyUrl,
+      'Customized': 'Yes'
+    };
+    
+    // Add element URLs to properties
+    if (elementUrls && elementUrls.length > 0) {
+      elementUrls.forEach((url, index) => {
+        properties[`_element${index + 1}`] = url;
+      });
+      console.log(`Added ${elementUrls.length} element URLs to cart properties`);
+    }
+    
     // Add to Shopify cart
     const formData = {
       items: [{
         id: variantId,
         quantity: 1,
-        properties: {
-          '_design_id': designId,
-          '_main': imageUrl,
-          '_image1': emptyCaseUrl,
-          '_print-image': designOnlyUrl,
-          '_design_link': imageUrl,  // Add link property for easy access
-          'Customized': 'Yes',
-          'View Design': imageUrl  // User-visible property with link
-        },
+        properties: properties,
         // Set the custom image as the line item image
         image: imageUrl
       }]
@@ -449,8 +501,8 @@ console.log('=========================');
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bangers&family=Cinzel:wght@400;700&family=Comforter+Brush&family=Dancing+Script:wght@400;700&family=Fuggles&family=Great+Vibes&family=Leckerli+One&family=Luckiest+Guy&family=Montserrat:wght@400;700&family=Noto+Serif:wght@400;700&family=Pacifico&family=Poppins:wght@400;700&family=Roboto:wght@400;700&family=Sacramento&family=Source+Code+Pro:wght@400;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
 
 <!-- Load React app directly from theme extension assets -->
-<link rel="stylesheet" href="{{ 'phone-case-customizer.css' | asset_url }}?v=278">
-<script src="{{ 'phone-case-customizer.js' | asset_url }}?v=278" defer></script>
+<link rel="stylesheet" href="{{ 'phone-case-customizer.css' | asset_url }}?v=291">
+<script src="{{ 'phone-case-customizer.js' | asset_url }}?v=291" defer></script>
 
 {% schema %}
 {

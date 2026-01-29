@@ -11,6 +11,19 @@ export async function action({ request }: ActionFunctionArgs) {
     const emptyCaseFile = formData.get('emptyCase') as File;
     const designOnlyFile = formData.get('designOnly') as File;
     
+    // Get all element images (element0, element1, element2, etc.)
+    const elementFiles: File[] = [];
+    let elementIndex = 0;
+    while (formData.has(`element${elementIndex}`)) {
+      const elementFile = formData.get(`element${elementIndex}`) as File;
+      if (elementFile) {
+        elementFiles.push(elementFile);
+      }
+      elementIndex++;
+    }
+    
+    console.log(`Received ${elementFiles.length} element images`);
+    
     // Get shop from Shopify's App Proxy headers
     const url = new URL(request.url);
     let shopDomain = url.searchParams.get('shop');
@@ -62,7 +75,18 @@ export async function action({ request }: ActionFunctionArgs) {
     const designOnlyBase64 = designOnlyBuffer.toString('base64');
     const designOnlyDataUrl = `data:image/png;base64,${designOnlyBase64}`;
     
-    // Store in database
+    // Convert element images to base64
+    const elementDataUrls: string[] = [];
+    for (const elementFile of elementFiles) {
+      const elementBuffer = Buffer.from(await elementFile.arrayBuffer());
+      const elementBase64 = elementBuffer.toString('base64');
+      const elementDataUrl = `data:image/png;base64,${elementBase64}`;
+      elementDataUrls.push(elementDataUrl);
+    }
+    
+    console.log(`Converted ${elementDataUrls.length} element images to base64`);
+    
+    // Store in database with element images as JSON array
     const design = await prisma.design.create({
       data: {
         shop: shopDomain,
@@ -70,6 +94,7 @@ export async function action({ request }: ActionFunctionArgs) {
         imageUrl: completeDataUrl, // Complete design with frame
         emptyCaseUrl: emptyCaseDataUrl, // Empty phone case
         designOnlyUrl: designOnlyDataUrl, // Design elements only
+        elementImages: JSON.stringify(elementDataUrls), // Store element images as JSON
       },
     });
     
@@ -79,11 +104,17 @@ export async function action({ request }: ActionFunctionArgs) {
     const emptyCaseUrl = `${baseUrl}/design-image/${design.id}/empty`;
     const designOnlyUrl = `${baseUrl}/design-image/${design.id}/design-only`;
     
+    // Generate URLs for element images
+    const elementUrls = elementDataUrls.map((_, index) => 
+      `${baseUrl}/design-image/${design.id}/element/${index}`
+    );
+    
     return Response.json({
       designId: design.id,
       imageUrl: publicImageUrl,
       emptyCaseUrl: emptyCaseUrl,
       designOnlyUrl: designOnlyUrl,
+      elementUrls: elementUrls,
     });
     
   } catch (error) {

@@ -21,24 +21,33 @@ export async function loader({ request }: LoaderFunctionArgs) {
     
     if (!shopDomain) {
       return Response.json({ 
-        themeColor: "#00a8e8" // Default color
+        themeColor: "#00a8e8", // Default color
+        buttonColor: "#667eea", // Default button color
+        buttonText: "Customize Your Phone Case", // Default button text
+        buttonLogoUrl: null // No logo by default
       });
     }
     
     // Get settings from database
     const settings = await prisma.appSettings.findUnique({
       where: { shop: shopDomain },
-      select: { themeColor: true },
+      select: { themeColor: true, buttonColor: true, buttonText: true, buttonLogoUrl: true },
     });
     
     return Response.json({
-      themeColor: settings?.themeColor || "#00a8e8"
+      themeColor: settings?.themeColor || "#00a8e8",
+      buttonColor: settings?.buttonColor || "#667eea",
+      buttonText: settings?.buttonText || "Customize Your Phone Case",
+      buttonLogoUrl: settings?.buttonLogoUrl || null
     });
     
   } catch (error) {
     console.error('Error fetching settings:', error);
     return Response.json({ 
-      themeColor: "#00a8e8" // Default color on error
+      themeColor: "#00a8e8", // Default color on error
+      buttonColor: "#667eea", // Default button color on error
+      buttonText: "Customize Your Phone Case", // Default button text on error
+      buttonLogoUrl: null // No logo by default on error
     });
   }
 }

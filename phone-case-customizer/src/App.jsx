@@ -8,7 +8,7 @@ function App() {
   // Get initial values from liquid template data attributes
   const rootElement = document.getElementById('phone-case-root')
   const initialFrameUrl = rootElement?.dataset?.frameUrl || '/phone-case-frame.png'
-  const initialPhoneCaseUrl = rootElement?.dataset?.phoneCaseUrl || '/phone-case.png'
+  const initialPhoneCaseUrl = rootElement?.dataset?.phoneCaseUrl || '' // No fallback - blank if not provided
   const initialProductImageUrl = rootElement?.dataset?.productImageUrl || ''
   const initialVariantId = rootElement?.dataset?.variantId || ''
   const designsUrl = rootElement?.dataset?.designsUrl || '/pre-design-images.json'
@@ -147,12 +147,18 @@ function App() {
   useEffect(() => {
     const phoneScreen = document.querySelector('.phone-screen')
     if (phoneScreen) {
-      phoneScreen.style.backgroundImage = `url('${phoneCaseUrl}')`
+      if (phoneCaseUrl) {
+        phoneScreen.style.backgroundImage = `url('${phoneCaseUrl}')`
+      } else {
+        // No background image - show blank/white
+        phoneScreen.style.backgroundImage = 'none'
+      }
     }
   }, [phoneCaseUrl])
 
   // Generate frame from background image if frameUrl is default
-  const [generatedFrameUrl, setGeneratedFrameUrl] = useState(frameUrl)
+  const [generatedFrameUrl, setGeneratedFrameUrl] = useState(null) // Start with null - no frame until generated
+  const [isFrameLoading, setIsFrameLoading] = useState(true)
   const frameCache = useRef({}) // Cache frames by product image URL
   
   useEffect(() => {
@@ -162,10 +168,12 @@ function App() {
       if (frameCache.current[productImageUrl]) {
         console.log('Using cached frame for:', productImageUrl)
         setGeneratedFrameUrl(frameCache.current[productImageUrl])
+        setIsFrameLoading(false)
         return
       }
       
       console.log('DEBUG: Generating frame from product image:', productImageUrl)
+      setIsFrameLoading(true)
       
       // Add timestamp to prevent caching
       const timestamp = Date.now()
@@ -184,11 +192,25 @@ function App() {
             setGeneratedFrameUrl(data.frameUrl)
           } else {
             console.error('Frame generation failed:', data.error)
+            // NO FALLBACK - leave frame as null
+            setGeneratedFrameUrl(null)
           }
+          setIsFrameLoading(false)
         })
         .catch(err => {
           console.error('Frame generation error:', err)
+          // NO FALLBACK - leave frame as null
+          setGeneratedFrameUrl(null)
+          setIsFrameLoading(false)
         })
+    } else if (!frameUrl.includes('phone-case-frame.png')) {
+      // Use provided custom frame URL directly (not default)
+      setGeneratedFrameUrl(frameUrl)
+      setIsFrameLoading(false)
+    } else {
+      // Default frame with no product image - don't show frame
+      setGeneratedFrameUrl(null)
+      setIsFrameLoading(false)
     }
   }, [frameUrl, productImageUrl])
   const [uploadedImages, setUploadedImages] = useState([])
@@ -1213,17 +1235,38 @@ function App() {
     // Scale for high quality
     ctx.scale(2, 2)
     
-    // Draw background (phone-case.png) to fill entire 600x1000
-    const bgImg = new Image()
-    bgImg.crossOrigin = 'anonymous'
-    await new Promise((resolve, reject) => {
-      bgImg.onload = resolve
-      bgImg.onerror = reject
-      bgImg.src = phoneCaseUrl
-    })
-    
-    // Draw background to fill the entire canvas (600x1000 logical size)
-    ctx.drawImage(bgImg, 0, 0, 600, 1000)
+    // Draw background (phone-case.png) to fill entire 600x1000 - only if URL exists
+    if (phoneCaseUrl) {
+      try {
+        const bgImg = new Image()
+        bgImg.crossOrigin = 'anonymous'
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Background image timeout')), 10000)
+          bgImg.onload = () => {
+            clearTimeout(timeout)
+            resolve()
+          }
+          bgImg.onerror = () => {
+            clearTimeout(timeout)
+            reject(new Error('Background image failed to load'))
+          }
+          bgImg.src = phoneCaseUrl
+        })
+        
+        // Draw background to fill the entire canvas (600x1000 logical size)
+        ctx.drawImage(bgImg, 0, 0, 600, 1000)
+      } catch (error) {
+        console.warn('Background image not loaded:', error.message)
+        // Fill with white background as fallback
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, 600, 1000)
+      }
+    } else {
+      // No background URL - fill with white
+      console.log('No background URL provided, using white background')
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, 600, 1000)
+    }
     
     // Calculate offset to center the design area (320x640) within 600x1000
     const designAreaWidth = 500
@@ -1326,28 +1369,35 @@ function App() {
       // Draw the captured design (already at 600x1000 with design elements positioned correctly)
       ctx.drawImage(screenCanvas, 0, 0)
 
-      // Draw the frame on top
+      // Draw the frame on top - only if frame exists
       const phoneFrameImg = document.querySelector('.phone-case-frame img')
-      if (phoneFrameImg) {
-        const frameStart = performance.now()
-        console.log('🖼️ Loading frame image')
-        
-        await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Frame timeout')), 10000)
-          const frameImg = new Image()
-          frameImg.crossOrigin = 'anonymous'
-          frameImg.onload = () => {
-            clearTimeout(timeout)
-            console.log(`⏱️ Frame loaded: ${(performance.now() - frameStart).toFixed(0)}ms`)
-            ctx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
-            resolve()
-          }
-          frameImg.onerror = (error) => {
-            clearTimeout(timeout)
-            reject(error)
-          }
-          frameImg.src = phoneFrameImg.src
-        })
+      if (phoneFrameImg && generatedFrameUrl) {
+        try {
+          const frameStart = performance.now()
+          console.log('🖼️ Loading frame image')
+          
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Frame timeout')), 10000)
+            const frameImg = new Image()
+            frameImg.crossOrigin = 'anonymous'
+            frameImg.onload = () => {
+              clearTimeout(timeout)
+              console.log(`⏱️ Frame loaded: ${(performance.now() - frameStart).toFixed(0)}ms`)
+              ctx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
+              resolve()
+            }
+            frameImg.onerror = (error) => {
+              clearTimeout(timeout)
+              reject(error)
+            }
+            frameImg.src = phoneFrameImg.src
+          })
+        } catch (error) {
+          console.warn('Frame not loaded, continuing without frame:', error.message)
+          // Continue without frame
+        }
+      } else {
+        console.log('No frame available, exporting without frame')
       }
 
       const exportStart = performance.now()
@@ -1962,19 +2012,28 @@ function App() {
       // Draw captured design
       completeCtx.drawImage(screenCanvas, 0, 0)
 
-      // Draw frame
+      // Draw frame - only if exists
       const phoneFrameImg = document.querySelector('.phone-case-frame img')
-      if (phoneFrameImg) {
-        await new Promise((resolve, reject) => {
-          const frameImg = new Image()
-          frameImg.crossOrigin = 'anonymous'
-          frameImg.onload = () => {
-            completeCtx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
-            resolve()
-          }
-          frameImg.onerror = reject
-          frameImg.src = phoneFrameImg.src
-        })
+      if (phoneFrameImg && generatedFrameUrl) {
+        try {
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Frame timeout')), 10000)
+            const frameImg = new Image()
+            frameImg.crossOrigin = 'anonymous'
+            frameImg.onload = () => {
+              clearTimeout(timeout)
+              completeCtx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
+              resolve()
+            }
+            frameImg.onerror = (error) => {
+              clearTimeout(timeout)
+              reject(error)
+            }
+            frameImg.src = phoneFrameImg.src
+          })
+        } catch (error) {
+          console.warn('Frame not loaded for complete image, continuing without frame:', error.message)
+        }
       }
 
       // IMAGE 2: Empty phone case (background + frame, no design)
@@ -1983,32 +2042,60 @@ function App() {
       emptyCanvas.height = finalHeight * 2
       const emptyCtx = emptyCanvas.getContext('2d')
 
-      // Draw background
-      const bgImg = new Image()
-      bgImg.crossOrigin = 'anonymous'
-      await new Promise((resolve, reject) => {
-        bgImg.onload = () => {
+      // Draw background - only if exists
+      if (phoneCaseUrl) {
+        try {
+          const bgImg = new Image()
+          bgImg.crossOrigin = 'anonymous'
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Background timeout')), 10000)
+            bgImg.onload = () => {
+              clearTimeout(timeout)
+              emptyCtx.scale(2, 2)
+              emptyCtx.drawImage(bgImg, 0, 0, 600, 1000)
+              resolve()
+            }
+            bgImg.onerror = (error) => {
+              clearTimeout(timeout)
+              reject(error)
+            }
+            bgImg.src = phoneCaseUrl
+          })
+        } catch (error) {
+          console.warn('Background not loaded for empty case, using white:', error.message)
           emptyCtx.scale(2, 2)
-          emptyCtx.drawImage(bgImg, 0, 0, 600, 1000)
-          resolve()
+          emptyCtx.fillStyle = '#ffffff'
+          emptyCtx.fillRect(0, 0, 600, 1000)
         }
-        bgImg.onerror = reject
-        bgImg.src = phoneCaseUrl
-      })
+      } else {
+        // No background - use white
+        emptyCtx.scale(2, 2)
+        emptyCtx.fillStyle = '#ffffff'
+        emptyCtx.fillRect(0, 0, 600, 1000)
+      }
 
-      // Draw frame
-      if (phoneFrameImg) {
-        await new Promise((resolve, reject) => {
-          const frameImg = new Image()
-          frameImg.crossOrigin = 'anonymous'
-          frameImg.onload = () => {
-            emptyCtx.setTransform(1, 0, 0, 1, 0, 0) // Reset transform
-            emptyCtx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
-            resolve()
-          }
-          frameImg.onerror = reject
-          frameImg.src = phoneFrameImg.src
-        })
+      // Draw frame - only if exists
+      if (phoneFrameImg && generatedFrameUrl) {
+        try {
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Frame timeout')), 10000)
+            const frameImg = new Image()
+            frameImg.crossOrigin = 'anonymous'
+            frameImg.onload = () => {
+              clearTimeout(timeout)
+              emptyCtx.setTransform(1, 0, 0, 1, 0, 0) // Reset transform
+              emptyCtx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
+              resolve()
+            }
+            frameImg.onerror = (error) => {
+              clearTimeout(timeout)
+              reject(error)
+            }
+            frameImg.src = phoneFrameImg.src
+          })
+        } catch (error) {
+          console.warn('Frame not loaded for empty case, continuing without frame:', error.message)
+        }
       }
 
       // IMAGE 3: Design only (transparent background, no frame)
@@ -2083,6 +2170,87 @@ function App() {
         designOnlyCanvas.toBlob(resolve, 'image/png')
       })
 
+      // Generate individual element images
+      console.log('🎨 Generating individual element images...')
+      const elementBlobs = []
+
+      // Generate image for each uploaded image (original, no transformations)
+      for (let i = 0; i < placedImages.length; i++) {
+        const img = placedImages[i]
+        try {
+          // Fetch the original image
+          const response = await fetch(img.src)
+          const blob = await response.blob()
+          elementBlobs.push({
+            blob: blob,
+            name: `element-image-${i + 1}.png`,
+            type: 'image'
+          })
+          console.log(`✓ Generated element image ${i + 1}`)
+        } catch (error) {
+          console.warn(`Failed to fetch image ${i + 1}:`, error)
+        }
+      }
+
+      // Generate image for each text element
+      for (let i = 0; i < placedTexts.length; i++) {
+        const text = placedTexts[i]
+        try {
+          // Create canvas for text
+          const textCanvas = document.createElement('canvas')
+          const textCtx = textCanvas.getContext('2d')
+          
+          // Set font to measure text
+          textCtx.font = `${text.fontStyle || 'normal'} ${text.fontWeight || 'normal'} ${text.fontSize}px ${text.fontFamily || 'Arial'}`
+          
+          // Measure text
+          const metrics = textCtx.measureText(text.content)
+          const textWidth = metrics.width
+          const textHeight = text.fontSize * 1.5 // Approximate height with padding
+          
+          // Set canvas size with padding
+          const padding = 20
+          textCanvas.width = textWidth + padding * 2
+          textCanvas.height = textHeight + padding * 2
+          
+          // Re-set font after canvas resize (canvas resets on size change)
+          textCtx.font = `${text.fontStyle || 'normal'} ${text.fontWeight || 'normal'} ${text.fontSize}px ${text.fontFamily || 'Arial'}`
+          textCtx.fillStyle = text.color || '#000000'
+          textCtx.textAlign = 'center'
+          textCtx.textBaseline = 'middle'
+          
+          // Apply text shadow if exists
+          if (text.textShadow) {
+            const shadowMatch = text.textShadow.match(/(\d+)px\s+(\d+)px\s+(\d+)px\s+(#[0-9A-F]{6})/i)
+            if (shadowMatch) {
+              textCtx.shadowOffsetX = parseInt(shadowMatch[1])
+              textCtx.shadowOffsetY = parseInt(shadowMatch[2])
+              textCtx.shadowBlur = parseInt(shadowMatch[3])
+              textCtx.shadowColor = shadowMatch[4]
+            }
+          }
+          
+          // Draw text centered
+          textCtx.fillText(text.content, textCanvas.width / 2, textCanvas.height / 2)
+          
+          // Convert to blob
+          const textBlob = await new Promise((resolve) => {
+            textCanvas.toBlob(resolve, 'image/png')
+          })
+          
+          elementBlobs.push({
+            blob: textBlob,
+            name: `element-text-${i + 1}.png`,
+            type: 'text'
+          })
+          console.log(`✓ Generated text element ${i + 1}: "${text.content}"`)
+        } catch (error) {
+          console.warn(`Failed to generate text ${i + 1}:`, error)
+        }
+      }
+
+      console.log(`✓ Total elements generated: ${elementBlobs.length}`)
+
       // Step 2: Send all images and design data to backend
       const storeUrl = window.location.origin
       const proxyUrl = `${storeUrl}/apps/customizer/save-design`
@@ -2094,6 +2262,11 @@ function App() {
       formData.append('designImage', completeBlob, 'design-complete.png')
       formData.append('emptyCase', emptyBlob, 'design-empty.png')
       formData.append('designOnly', designOnlyBlob, 'design-only.png')
+      
+      // Append all element images
+      elementBlobs.forEach((element, index) => {
+        formData.append(`element${index}`, element.blob, element.name)
+      })
 
       const response = await fetch(proxyUrl, {
         method: 'POST',
@@ -2114,7 +2287,8 @@ function App() {
         designId: result.designId,
         imageUrl: result.imageUrl,
         emptyCaseUrl: result.emptyCaseUrl,
-        designOnlyUrl: result.designOnlyUrl
+        designOnlyUrl: result.designOnlyUrl,
+        elementUrls: result.elementUrls || []
       }
     } catch (error) {
       console.error('Error saving design:', error)
@@ -2133,7 +2307,7 @@ function App() {
       const designData = serializeDesign()
 
       // Save to backend and get design ID and all image URLs
-      const { designId, imageUrl, emptyCaseUrl, designOnlyUrl } = await saveDesignToBackend(designData)
+      const { designId, imageUrl, emptyCaseUrl, designOnlyUrl, elementUrls } = await saveDesignToBackend(designData)
 
       // Dispatch custom event for the theme extension to handle cart add
       const event = new CustomEvent('customizer:addToCart', {
@@ -2141,7 +2315,8 @@ function App() {
           designId,
           imageUrl,
           emptyCaseUrl,
-          designOnlyUrl
+          designOnlyUrl,
+          elementUrls
         }
       })
       window.dispatchEvent(event)
@@ -2183,19 +2358,28 @@ function App() {
       // Draw the captured design (already at 600x1000 with design elements positioned correctly)
       ctx.drawImage(screenCanvas, 0, 0)
 
-      // Draw the frame on top
+      // Draw the frame on top - only if exists
       const phoneFrameImg = document.querySelector('.phone-case-frame img')
-      if (phoneFrameImg) {
-        await new Promise((resolve, reject) => {
-          const frameImg = new Image()
-          frameImg.crossOrigin = 'anonymous'
-          frameImg.onload = () => {
-            ctx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
-            resolve()
-          }
-          frameImg.onerror = reject
-          frameImg.src = phoneFrameImg.src
-        })
+      if (phoneFrameImg && generatedFrameUrl) {
+        try {
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Frame timeout')), 10000)
+            const frameImg = new Image()
+            frameImg.crossOrigin = 'anonymous'
+            frameImg.onload = () => {
+              clearTimeout(timeout)
+              ctx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
+              resolve()
+            }
+            frameImg.onerror = (error) => {
+              clearTimeout(timeout)
+              reject(error)
+            }
+            frameImg.src = phoneFrameImg.src
+          })
+        } catch (error) {
+          console.warn('Frame not loaded for print, continuing without frame:', error.message)
+        }
       }
       
       // Create a hidden iframe for printing
@@ -2297,19 +2481,28 @@ function App() {
       // Draw the captured design (already at 600x1000 with design elements positioned correctly)
       ctx.drawImage(screenCanvas, 0, 0)
 
-      // Draw the frame on top
+      // Draw the frame on top - only if exists
       const phoneFrameImg = document.querySelector('.phone-case-frame img')
-      if (phoneFrameImg) {
-        await new Promise((resolve, reject) => {
-          const frameImg = new Image()
-          frameImg.crossOrigin = 'anonymous'
-          frameImg.onload = () => {
-            ctx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
-            resolve()
-          }
-          frameImg.onerror = reject
-          frameImg.src = phoneFrameImg.src
-        })
+      if (phoneFrameImg && generatedFrameUrl) {
+        try {
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Frame timeout')), 10000)
+            const frameImg = new Image()
+            frameImg.crossOrigin = 'anonymous'
+            frameImg.onload = () => {
+              clearTimeout(timeout)
+              ctx.drawImage(frameImg, 0, 0, finalWidth * 2, finalHeight * 2)
+              resolve()
+            }
+            frameImg.onerror = (error) => {
+              clearTimeout(timeout)
+              reject(error)
+            }
+            frameImg.src = phoneFrameImg.src
+          })
+        } catch (error) {
+          console.warn('Frame not loaded for preview, continuing without frame:', error.message)
+        }
       }
       
       // Set the preview image and show modal
@@ -2330,7 +2523,7 @@ function App() {
       {isCapturing && (
         <div className="capture-overlay">
           <div className="capture-spinner"></div>
-          <p>Generating images...</p>
+          <p>Yükleniyor...</p>
         </div>
       )}
       
@@ -3189,10 +3382,12 @@ function App() {
                 )
               ))}
             </div>
-            {/* Phone Case Frame Overlay */}
-            <div className="phone-case-frame">
-              <img src={generatedFrameUrl} alt="Phone case frame" />
-            </div>
+            {/* Phone Case Frame Overlay - Only show when frame is loaded */}
+            {generatedFrameUrl && !isFrameLoading && (
+              <div className="phone-case-frame">
+                <img src={generatedFrameUrl} alt="Phone case frame" />
+              </div>
+            )}
           </div>
 
           {/* Text Editing Panel */}
