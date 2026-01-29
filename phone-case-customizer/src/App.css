@@ -596,7 +596,6 @@
   position: relative;
   width: 340px;
   height: 660px;
-  background: #ff8c69;
   border-radius: 50px;
   padding: 0;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
@@ -608,12 +607,24 @@
 @media (max-width: 767px) {
   .phone-section {
     padding: 1rem; /* 16px on tablets/large phones */
+    overflow: hidden !important; /* Prevent scrolling on mobile */
+    justify-content: center; /* Center the phone case */
+  }
+  
+  .phone-case {
+    position: fixed !important; /* Keep phone case fixed on mobile */
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 1 !important;
   }
 }
 
 @media (max-width: 479px) {
   .phone-section {
     padding: 0.5rem; /* 8px on small phones */
+    overflow: hidden !important; /* Prevent scrolling on mobile */
+    justify-content: center; /* Center the phone case */
   }
 }
 
@@ -1156,9 +1167,10 @@
   align-items: center;
   gap: 0.5rem; /* Reduced from 0.75rem */
   padding: 0.5rem 0.75rem; /* Reduced from 0.75rem 1rem */
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--theme-color) !important;
   border-radius: 8px;
-  background: white;
+  background: white !important;
+  color: var(--theme-color) !important;
   cursor: pointer;
   transition: all 0.2s;
   width: 100%; /* Full width for grid cells */
@@ -1190,23 +1202,30 @@
 }
 
 .text-edit-icon-btn:hover {
-  border-color: var(--theme-color);
-  background: var(--theme-color-hover-bg);
+  border-color: var(--theme-color) !important;
+  background: rgba(var(--theme-color-rgb), 0.5) !important;
+  color: white !important;
 }
 
 .text-edit-icon-btn:active {
-  background: var(--theme-color-light);
+  background: var(--theme-color) !important;
+  color: white !important;
   transform: scale(0.98);
 }
 
 .text-edit-icon-btn span {
   font-size: 0.875rem; /* Consistent size for all text */
-  color: #666;
+  color: var(--theme-color) !important;
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+}
+
+.text-edit-icon-btn:hover span,
+.text-edit-icon-btn:active span {
+  color: white !important;
 }
 
 /* Mobile: Same size, centered */
@@ -1218,7 +1237,12 @@
 }
 
 .text-edit-icon-btn svg {
-  color: #333;
+  color: var(--theme-color) !important;
+}
+
+.text-edit-icon-btn:hover svg,
+.text-edit-icon-btn:active svg {
+  color: white !important;
 }
 
 .color-preview {
@@ -1308,93 +1332,133 @@
   border-radius: 8px;
   font-size: 0.875rem;
   background: white;
+  color: #333;
   cursor: pointer;
 }
 
 /* Style each font option in its own typeface */
+.font-family-select-large option {
+  color: #333;
+  background: white;
+}
+
 .font-family-select-large option[value="Anton"] {
   font-family: 'Anton', sans-serif;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Bangers"] {
   font-family: 'Bangers', cursive;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Cinzel"] {
   font-family: 'Cinzel', serif;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Comforter Brush"] {
   font-family: 'Comforter Brush', cursive;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Dancing Script"] {
   font-family: 'Dancing Script', cursive;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Fuggles"] {
   font-family: 'Fuggles', cursive;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Great Vibes"] {
   font-family: 'Great Vibes', cursive;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Leckerli One"] {
   font-family: 'Leckerli One', cursive;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Luckiest Guy"] {
   font-family: 'Luckiest Guy', cursive;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Montserrat"] {
   font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Noto Serif"] {
   font-family: 'Noto Serif', serif;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Pacifico"] {
   font-family: 'Pacifico', cursive;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Poppins"] {
   font-family: 'Poppins', sans-serif;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Roboto"] {
   font-family: 'Roboto', sans-serif;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Sacramento"] {
   font-family: 'Sacramento', cursive;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Source Code Pro"] {
   font-family: 'Source Code Pro', monospace;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 .font-family-select-large option[value="Ubuntu Mono"] {
   font-family: 'Ubuntu Mono', monospace;
   font-size: 1rem;
+  color: #333;
+  background: white;
 }
 
 /* Mobile: Same size */
@@ -1786,9 +1850,10 @@
   align-items: center;
   gap: 0.5rem; /* Reduced from 0.75rem */
   padding: 0.5rem 0.75rem; /* Reduced from 0.75rem 1rem */
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--theme-color) !important;
   border-radius: 8px;
-  background: white;
+  background: white !important;
+  color: var(--theme-color) !important;
   cursor: pointer;
   transition: all 0.2s;
   width: 100%; /* Full width for grid cells */
@@ -1820,23 +1885,30 @@
 }
 
 .image-edit-icon-btn:hover {
-  border-color: var(--theme-color);
-  background: var(--theme-color-hover-bg);
+  border-color: var(--theme-color) !important;
+  background: rgba(var(--theme-color-rgb), 0.5) !important;
+  color: white !important;
 }
 
 .image-edit-icon-btn:active {
-  background: var(--theme-color-light);
+  background: var(--theme-color) !important;
+  color: white !important;
   transform: scale(0.98);
 }
 
 .image-edit-icon-btn span {
   font-size: 0.875rem; /* Consistent size for all text */
-  color: #666;
+  color: var(--theme-color) !important;
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+}
+
+.image-edit-icon-btn:hover span,
+.image-edit-icon-btn:active span {
+  color: white !important;
 }
 
 /* Mobile: Same size, centered */
@@ -1848,7 +1920,12 @@
 }
 
 .image-edit-icon-btn svg {
-  color: #333;
+  color: var(--theme-color) !important;
+}
+
+.image-edit-icon-btn:hover svg,
+.image-edit-icon-btn:active svg {
+  color: white !important;
 }
 
 /* Delete button styling */

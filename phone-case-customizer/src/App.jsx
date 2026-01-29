@@ -58,6 +58,8 @@ function App() {
     
     const rgb = hexToRgb(themeColor)
     if (rgb) {
+      // RGB values for use in rgba()
+      document.documentElement.style.setProperty('--theme-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`)
       // Lighter version for backgrounds (20% opacity)
       document.documentElement.style.setProperty('--theme-color-light', `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`)
       // Even lighter for hover backgrounds (10% opacity)
