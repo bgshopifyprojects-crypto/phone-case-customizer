@@ -41,10 +41,29 @@
       {% assign product_image_url = '' %}
     {% endif %}
     
+    {% comment %}
+      Frame URL logic:
+      - If product has only 1 variant, look for an image with alt text = "frame"
+      - If found, use that as the frame
+      - Otherwise, use default frame (which triggers auto-generation)
+    {% endcomment %}
     {% assign frame_url = 'phone-case-frame.png' | asset_url %}
+    {% assign custom_frame_found = false %}
+    
+    {% if product.variants.size == 1 %}
+      {% for image in product.images %}
+        {% assign alt_lower = image.alt | downcase %}
+        {% if alt_lower == 'frame' %}
+          {% assign frame_url = image | image_url: width: 600 %}
+          {% assign custom_frame_found = true %}
+          {% break %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
     
     <div id="phone-case-root" 
          data-frame-url="{{ frame_url }}"
+         data-custom-frame="{{ custom_frame_found }}"
          data-phone-case-url="{{ background_url }}"
          data-product-image-url="{{ product_image_url }}"
          data-variant-id="{{ product.selected_or_first_available_variant.id }}"
@@ -88,6 +107,8 @@ console.log('=========================');
 console.log('Data attributes set:');
 console.log('  background_url:', '{{ background_url }}');
 console.log('  frame_url:', '{{ frame_url }}');
+console.log('  custom_frame_found:', {{ custom_frame_found }});
+console.log('  variants_count:', {{ product.variants.size }});
 console.log('=========================');
 
 // Listen for Shopify variant change events and update data attributes
@@ -290,7 +311,71 @@ console.log('=========================');
   /* Close button is now created by React component - no styles needed here */
 
   /* No styles for #phone-case-root - let built CSS handle it like localhost */
+  
+  /* Hide frame images from product page - only hide the image itself */
+  img[alt="frame" i],
+  img[alt="Frame" i],
+  img[alt="FRAME" i] {
+    display: none !important;
+  }
 </style>
+
+<script>
+// Remove frame images and their parent containers from product page
+(function() {
+  function hideFrameImages() {
+    console.log('Searching for frame images to hide...');
+    
+    // Find all product media containers (li elements)
+    const mediaContainers = document.querySelectorAll('li.product-media-container, li[class*="product-media"], li[class*="media"]');
+    
+    console.log('Found', mediaContainers.length, 'media containers');
+    
+    mediaContainers.forEach(container => {
+      // Check if this container has an image with alt="frame"
+      const img = container.querySelector('img');
+      if (img) {
+        const alt = img.getAttribute('alt');
+        if (alt && alt.toLowerCase() === 'frame') {
+          console.log('Found frame image in container, hiding:', container);
+          container.style.display = 'none';
+          container.style.visibility = 'hidden';
+          container.style.opacity = '0';
+          container.style.height = '0';
+          container.style.width = '0';
+          container.style.overflow = 'hidden';
+          container.style.position = 'absolute';
+        }
+      }
+    });
+  }
+  
+  // Run on page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hideFrameImages);
+  } else {
+    hideFrameImages();
+  }
+  
+  // Run again after delays to catch dynamically loaded images
+  setTimeout(hideFrameImages, 100);
+  setTimeout(hideFrameImages, 500);
+  setTimeout(hideFrameImages, 1000);
+  setTimeout(hideFrameImages, 2000);
+  
+  // Watch for DOM changes
+  const observer = new MutationObserver(function(mutations) {
+    hideFrameImages();
+  });
+  
+  observer.observe(document.body, { 
+    childList: true, 
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['alt']
+  });
+})();
+</script>
 
 <script>
 (function() {

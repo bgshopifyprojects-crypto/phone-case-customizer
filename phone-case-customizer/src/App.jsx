@@ -25,7 +25,15 @@ function App() {
   // State for theme color (can be updated from admin settings)
   const [themeColor, setThemeColor] = useState(initialThemeColor)
   
-  // Fetch admin theme color settings on mount
+  // State for text colors from admin (default colors as fallback)
+  const [textColorsFromAdmin, setTextColorsFromAdmin] = useState([
+    '#FFFFFF', '#C0C0C0', '#808080', '#000000',
+    '#FF0000', '#800000', '#FFFF00', '#808000',
+    '#00FF00', '#008000', '#00FFFF', '#008080',
+    '#0000FF', '#000080', '#FF00FF', '#800080'
+  ])
+  
+  // Fetch admin theme color and text colors settings on mount
   useEffect(() => {
     const settingsUrl = window.location.origin + '/apps/customizer/get-settings'
     
@@ -36,9 +44,15 @@ function App() {
           console.log('Theme color loaded from admin settings:', data.themeColor)
           setThemeColor(data.themeColor)
         }
+        if (data.textColors) {
+          // Parse comma-separated string into array
+          const colorsArray = data.textColors.split(',').map(c => c.trim()).filter(c => c)
+          console.log('Text colors loaded from admin settings:', colorsArray)
+          setTextColorsFromAdmin(colorsArray)
+        }
       })
       .catch(error => {
-        console.log('Using default theme color from block settings', error)
+        console.log('Using default theme color and text colors from block settings', error)
       })
   }, [])
   
@@ -162,7 +176,18 @@ function App() {
   const frameCache = useRef({}) // Cache frames by product image URL
   
   useEffect(() => {
-    // DEBUG: Generate frame from product image if available
+    const rootElement = document.getElementById('phone-case-root')
+    const hasCustomFrame = rootElement?.dataset?.customFrame === 'true'
+    
+    // If custom frame is provided (from product image with alt="frame"), use it directly
+    if (hasCustomFrame && !frameUrl.includes('phone-case-frame.png')) {
+      console.log('Using custom frame from product image:', frameUrl)
+      setGeneratedFrameUrl(frameUrl)
+      setIsFrameLoading(false)
+      return
+    }
+    
+    // Otherwise, generate frame from product image if available
     if (frameUrl.includes('phone-case-frame.png') && productImageUrl) {
       // Check cache first
       if (frameCache.current[productImageUrl]) {
@@ -235,7 +260,7 @@ function App() {
   const [historyIndex, setHistoryIndex] = useState(-1) // Current position in history
   const [justFinishedManipulation, setJustFinishedManipulation] = useState(false)
   const [textEditMode, setTextEditMode] = useState('main') // 'main', 'font', 'color', 'format', 'edit', 'size'
-  const [textColorTab, setTextColorTab] = useState('fill') // 'fill' or 'shadow' for text
+  const [textColorTab, setTextColorTab] = useState('fill') // 'fill', 'stroke', or 'shadow' for text
   const [textColorHue, setTextColorHue] = useState(0)
   const [textColorSaturation, setTextColorSaturation] = useState(0)
   const [textColorLightness, setTextColorLightness] = useState(0)
@@ -244,6 +269,11 @@ function App() {
   const [textShadowHue, setTextShadowHue] = useState(0)
   const [textShadowSaturation, setTextShadowSaturation] = useState(0)
   const [textShadowLightness, setTextShadowLightness] = useState(0)
+  const [textStrokeColor, setTextStrokeColor] = useState('#000000')
+  const [textStrokeHue, setTextStrokeHue] = useState(0)
+  const [textStrokeSaturation, setTextStrokeSaturation] = useState(0)
+  const [textStrokeLightness, setTextStrokeLightness] = useState(0)
+  const [textStrokeWidth, setTextStrokeWidth] = useState(0)
   const [textLineHeight, setTextLineHeight] = useState(1)
   const [textLetterSpacing, setTextLetterSpacing] = useState(0)
   const [assetCategory, setAssetCategory] = useState('all')
@@ -1325,6 +1355,15 @@ function App() {
           ctx.shadowBlur = parseInt(shadowMatch[3])
           ctx.shadowColor = shadowMatch[4]
         }
+      }
+      
+      // Apply text stroke if exists
+      if (text.textStrokeWidth && text.textStrokeWidth > 0) {
+        ctx.strokeStyle = text.textStrokeColor || '#000000'
+        ctx.lineWidth = text.textStrokeWidth
+        ctx.lineJoin = 'round'
+        ctx.miterLimit = 2
+        ctx.strokeText(text.content, 0, 0)
       }
       
       ctx.fillText(text.content, 0, 0)
@@ -3048,7 +3087,7 @@ function App() {
               {assetViewMode === 'categories' ? (
                 // Category folder view
                 <>
-                  <div className="section-header">
+                  <div className="dsn-section-header">
                     <h3>Kategoriler</h3>
                   </div>
                   
@@ -3097,7 +3136,7 @@ function App() {
               ) : (
                 // Images view (when category is selected)
                 <>
-                  <div className="section-header">
+                  <div className="dsn-section-header">
                     <button className="back-btn" onClick={handleBackToCategories}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                         <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -3337,6 +3376,8 @@ function App() {
                         touchAction: 'none',
                         opacity: layer.data.opacity !== undefined ? layer.data.opacity : 1,
                         textShadow: layer.data.textShadow || 'none',
+                        WebkitTextStroke: layer.data.textStrokeWidth && layer.data.textStrokeWidth > 0 ? `${layer.data.textStrokeWidth}px ${layer.data.textStrokeColor || '#000000'}` : 'none',
+                        paintOrder: 'stroke fill',
                         lineHeight: layer.data.lineHeight || 1,
                         letterSpacing: `${layer.data.letterSpacing || 0}px`,
                         textDecoration: layer.data.textDecoration || 'none',
@@ -3776,7 +3817,13 @@ function App() {
                         className={textColorTab === 'fill' ? 'submenu-tab submenu-tab-active' : 'submenu-tab'}
                         onClick={() => setTextColorTab('fill')}
                       >
-                        Renk
+                        Doldur
+                      </div>
+                      <div 
+                        className={textColorTab === 'stroke' ? 'submenu-tab submenu-tab-active' : 'submenu-tab'}
+                        onClick={() => setTextColorTab('stroke')}
+                      >
+                        Stroke
                       </div>
                       <div 
                         className={textColorTab === 'shadow' ? 'submenu-tab submenu-tab-active' : 'submenu-tab'}
@@ -3788,90 +3835,24 @@ function App() {
                     
                     {textColorTab === 'fill' && (
                       <>
-                        <div className="shadow-color-picker">
-                          <div 
-                            className="color-picker-2d"
-                            style={{
-                              background: `linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,1)), linear-gradient(to right, rgba(255,255,255,1), hsl(${textColorHue}, 100%, 50%))`
-                            }}
-                            onClick={(e) => {
-                              const rect = e.currentTarget.getBoundingClientRect()
-                              const x = e.clientX - rect.left
-                              const y = e.clientY - rect.top
-                              const s = Math.round((x / rect.width) * 100)
-                              const l = Math.round(50 - (y / rect.height) * 50)
-                              setTextColorSaturation(s)
-                              setTextColorLightness(l)
-                              const newColor = hslToHex(textColorHue, s, l)
-                              if (activeTextId) {
-                                setPlacedTexts(prev => prev.map(text => 
-                                  text.id === activeTextId
-                                    ? { ...text, color: newColor }
-                                    : text
-                                ))
-                              }
-                            }}
-                          >
-                            <div 
-                              className="color-picker-cursor"
-                              style={{
-                                left: `${textColorSaturation}%`,
-                                top: `${(50 - textColorLightness) * 2}%`
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="hue-slider-container">
-                            <input
-                              type="range"
-                              min="0"
-                              max="360"
-                              value={textColorHue}
-                              className="hue-slider"
-                              onChange={(e) => {
-                                const newHue = parseInt(e.target.value)
-                                setTextColorHue(newHue)
-                                const newColor = hslToHex(newHue, textColorSaturation, textColorLightness)
+                        <div className="color-swatches">
+                          {textColorsFromAdmin.map(color => (
+                            <button
+                              key={color}
+                              className={`color-swatch ${placedTexts.find(t => t.id === activeTextId)?.color === color ? 'active' : ''}`}
+                              style={{ backgroundColor: color }}
+                              onClick={() => {
                                 if (activeTextId) {
                                   setPlacedTexts(prev => prev.map(text => 
                                     text.id === activeTextId
-                                      ? { ...text, color: newColor }
+                                      ? { ...text, color: color }
                                       : text
                                   ))
                                 }
                               }}
+                              title={color}
                             />
-                          </div>
-                          
-                          <div className="hex-input-container">
-                            <input
-                              type="text"
-                              value={placedTexts.find(t => t.id === activeTextId)?.color || '#000000'}
-                              className="hex-input"
-                              onChange={(e) => {
-                                const value = e.target.value
-                                if (/^#[0-9A-F]{6}$/i.test(value)) {
-                                  const hsl = hexToHsl(value)
-                                  setTextColorHue(hsl.h)
-                                  setTextColorSaturation(hsl.s)
-                                  setTextColorLightness(hsl.l)
-                                  if (activeTextId) {
-                                    setPlacedTexts(prev => prev.map(text => 
-                                      text.id === activeTextId
-                                        ? { ...text, color: value }
-                                        : text
-                                    ))
-                                  }
-                                }
-                              }}
-                            />
-                            <button className="eyedropper-btn" title="Renk seçici">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M2.586 16.726A2 2 0 0 0 2 18.138v3.862h3.862a2 2 0 0 0 1.414-.586l9.428-9.428L13.29 8.572l-10.704 8.154z"/>
-                                <path d="M17.704 4.29l2.006 2.006a1 1 0 0 1 0 1.414l-1.414 1.414-3.42-3.42 1.414-1.414a1 1 0 0 1 1.414 0z"/>
-                              </svg>
-                            </button>
-                          </div>
+                          ))}
                         </div>
                         
                         <div className="opacity-control">
@@ -3897,6 +3878,128 @@ function App() {
                               }}
                             />
                             <span className="opacity-value">{textOpacity.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    
+                    {textColorTab === 'stroke' && (
+                      <>
+                        <div className="shadow-color-picker">
+                          <div 
+                            className="color-picker-2d"
+                            style={{
+                              background: `linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,1)), linear-gradient(to right, rgba(255,255,255,1), hsl(${textStrokeHue}, 100%, 50%))`
+                            }}
+                            onClick={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect()
+                              const x = e.clientX - rect.left
+                              const y = e.clientY - rect.top
+                              const s = Math.round((x / rect.width) * 100)
+                              const l = Math.round(50 - (y / rect.height) * 50)
+                              setTextStrokeSaturation(s)
+                              setTextStrokeLightness(l)
+                              const newColor = hslToHex(textStrokeHue, s, l)
+                              setTextStrokeColor(newColor)
+                              if (activeTextId) {
+                                const strokeWidth = placedTexts.find(t => t.id === activeTextId)?.textStrokeWidth || 2
+                                setPlacedTexts(prev => prev.map(text => 
+                                  text.id === activeTextId
+                                    ? { ...text, textStrokeColor: newColor, textStrokeWidth: strokeWidth }
+                                    : text
+                                ))
+                              }
+                            }}
+                          >
+                            <div 
+                              className="color-picker-cursor"
+                              style={{
+                                left: `${textStrokeSaturation}%`,
+                                top: `${(50 - textStrokeLightness) * 2}%`
+                              }}
+                            />
+                          </div>
+                          
+                          <div className="hue-slider-container">
+                            <input
+                              type="range"
+                              min="0"
+                              max="360"
+                              value={textStrokeHue}
+                              className="hue-slider"
+                              onChange={(e) => {
+                                const newHue = parseInt(e.target.value)
+                                setTextStrokeHue(newHue)
+                                const newColor = hslToHex(newHue, textStrokeSaturation, textStrokeLightness)
+                                setTextStrokeColor(newColor)
+                                if (activeTextId) {
+                                  const strokeWidth = placedTexts.find(t => t.id === activeTextId)?.textStrokeWidth || 2
+                                  setPlacedTexts(prev => prev.map(text => 
+                                    text.id === activeTextId
+                                      ? { ...text, textStrokeColor: newColor, textStrokeWidth: strokeWidth }
+                                      : text
+                                  ))
+                                }
+                              }}
+                            />
+                          </div>
+                          
+                          <div className="hex-input-container">
+                            <input
+                              type="text"
+                              value={textStrokeColor}
+                              className="hex-input"
+                              onChange={(e) => {
+                                const value = e.target.value
+                                setTextStrokeColor(value)
+                                if (/^#[0-9A-F]{6}$/i.test(value)) {
+                                  const hsl = hexToHsl(value)
+                                  setTextStrokeHue(hsl.h)
+                                  setTextStrokeSaturation(hsl.s)
+                                  setTextStrokeLightness(hsl.l)
+                                  if (activeTextId) {
+                                    const strokeWidth = placedTexts.find(t => t.id === activeTextId)?.textStrokeWidth || 2
+                                    setPlacedTexts(prev => prev.map(text => 
+                                      text.id === activeTextId
+                                        ? { ...text, textStrokeColor: value, textStrokeWidth: strokeWidth }
+                                        : text
+                                    ))
+                                  }
+                                }
+                              }}
+                            />
+                            <button className="eyedropper-btn" title="Renk seçici">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M2.586 16.726A2 2 0 0 0 2 18.138v3.862h3.862a2 2 0 0 0 1.414-.586l9.428-9.428L13.29 8.572l-10.704 8.154z"/>
+                                <path d="M17.704 4.29l2.006 2.006a1 1 0 0 1 0 1.414l-1.414 1.414-3.42-3.42 1.414-1.414a1 1 0 0 1 1.414 0z"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="opacity-control">
+                          <label>Kalınlık</label>
+                          <div className="opacity-slider-wrapper">
+                            <input
+                              type="range"
+                              min="0"
+                              max="10"
+                              step="0.5"
+                              value={textStrokeWidth}
+                              className="opacity-slider"
+                              onChange={(e) => {
+                                const newWidth = parseFloat(e.target.value)
+                                setTextStrokeWidth(newWidth)
+                                if (activeTextId) {
+                                  setPlacedTexts(prev => prev.map(text => 
+                                    text.id === activeTextId
+                                      ? { ...text, textStrokeWidth: newWidth, textStrokeColor: textStrokeColor }
+                                      : text
+                                  ))
+                                }
+                              }}
+                            />
+                            <span className="opacity-value">{textStrokeWidth.toFixed(1)}</span>
                           </div>
                         </div>
                       </>

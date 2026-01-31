@@ -38,17 +38,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const buttonColor = formData.get("buttonColor") as string;
   const buttonText = formData.get("buttonText") as string;
   const buttonLogoUrl = formData.get("buttonLogoUrl") as string;
+  const textColors = formData.get("textColors") as string;
   
   // Update or create settings
   const settings = await prisma.appSettings.upsert({
     where: { shop: session.shop },
-    update: { themeColor, buttonColor, buttonText, buttonLogoUrl: buttonLogoUrl || null },
+    update: { themeColor, buttonColor, buttonText, buttonLogoUrl: buttonLogoUrl || null, textColors: textColors || "#FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000,#00FF00,#008000,#00FFFF,#008080,#0000FF,#000080,#FF00FF,#800080" },
     create: {
       shop: session.shop,
       themeColor,
       buttonColor,
       buttonText,
       buttonLogoUrl: buttonLogoUrl || null,
+      textColors: textColors || "#FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000,#00FF00,#008000,#00FFFF,#008080,#0000FF,#000080,#FF00FF,#800080",
     },
   });
   
@@ -62,6 +64,7 @@ export default function Index() {
   const [buttonColor, setButtonColor] = useState(settings.buttonColor);
   const [buttonText, setButtonText] = useState(settings.buttonText);
   const [buttonLogoUrl, setButtonLogoUrl] = useState(settings.buttonLogoUrl || "");
+  const [textColors, setTextColors] = useState(settings.textColors || "#FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000,#00FF00,#008000,#00FFFF,#008080,#0000FF,#000080,#FF00FF,#800080");
   
   const isLoading = fetcher.state === "submitting";
   const isSaved = fetcher.data?.success;
@@ -82,6 +85,7 @@ export default function Index() {
     formData.append("buttonColor", buttonColor);
     formData.append("buttonText", buttonText);
     formData.append("buttonLogoUrl", buttonLogoUrl);
+    formData.append("textColors", textColors);
     fetcher.submit(formData, { method: "POST" });
   };
   
@@ -383,6 +387,69 @@ export default function Index() {
               {...(isLoading ? { loading: true } : {})}
             >
               Save Settings
+            </s-button>
+            {isSaved && (
+              <s-text variant="success">✓ Settings saved successfully!</s-text>
+            )}
+          </s-stack>
+        </s-stack>
+      </s-section>
+      
+      <s-section heading="Text Color Palette">
+        <s-paragraph>
+          Customize the color palette available for text in the customizer. Enter up to 16 hex colors separated by commas.
+        </s-paragraph>
+        
+        <s-stack direction="block" gap="base">
+          <s-stack direction="inline" gap="base" align="center">
+            <s-text>Current Colors:</s-text>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {textColors.split(',').map((color, index) => (
+                <div
+                  key={index}
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "4px",
+                    backgroundColor: color.trim(),
+                    border: "2px solid #e0e0e0",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  }}
+                  title={color.trim()}
+                />
+              ))}
+            </div>
+          </s-stack>
+          
+          <s-stack direction="block" gap="tight">
+            <s-text>Color Palette (comma-separated hex colors):</s-text>
+            <textarea
+              value={textColors}
+              onChange={(e) => setTextColors(e.target.value)}
+              placeholder="#FFFFFF,#000000,#FF0000,..."
+              style={{
+                padding: "12px",
+                border: "2px solid #e0e0e0",
+                borderRadius: "8px",
+                fontFamily: "monospace",
+                fontSize: "14px",
+                width: "100%",
+                minHeight: "80px",
+                resize: "vertical",
+              }}
+            />
+            <s-text variant="subdued" style={{ fontSize: "13px" }}>
+              Example: #FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000
+            </s-text>
+          </s-stack>
+          
+          <s-stack direction="inline" gap="base">
+            <s-button
+              onClick={handleSubmit}
+              variant="primary"
+              {...(isLoading ? { loading: true } : {})}
+            >
+              Save Text Colors
             </s-button>
             {isSaved && (
               <s-text variant="success">✓ Settings saved successfully!</s-text>
