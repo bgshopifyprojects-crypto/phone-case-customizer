@@ -469,8 +469,9 @@ console.log('=========================');
     
     console.log('Add to cart event received:', { designId, imageUrl, emptyCaseUrl, designOnlyUrl, elementUrls });
     
-    // Get the current product variant ID
-    const variantId = '{{ product.selected_or_first_available_variant.id }}';
+    // Get the current variant ID from the root element (updated by variant change listener)
+    const rootElement = document.getElementById('phone-case-root');
+    const variantId = rootElement ? rootElement.getAttribute('data-variant-id') : '{{ product.selected_or_first_available_variant.id }}';
     
     console.log('Variant ID:', variantId);
     
