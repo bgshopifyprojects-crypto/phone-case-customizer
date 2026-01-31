@@ -453,7 +453,6 @@ console.log('=========================');
     if (root && window.ReactDOM) {
       window.ReactDOM.unmountComponentAtNode(root);
     }
-    // Don't refresh here - let the add to cart handler do it
   }
   
   // Close button is now handled by React component
@@ -526,10 +525,8 @@ console.log('=========================');
         
         closeModal();
         
-        // Refresh the page after successful cart add to show updated cart
-        setTimeout(() => {
-          window.location.reload();
-        }, 300);
+        // Redirect to cart page
+        window.location.href = '/cart';
       } else {
         const error = await response.json();
         console.error('Cart add error:', error);
