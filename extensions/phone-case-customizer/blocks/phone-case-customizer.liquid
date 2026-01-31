@@ -455,8 +455,8 @@ console.log('=========================');
       '_main': imageUrl,
       '_image1': emptyCaseUrl,
       '_print-image': designOnlyUrl,
-      'Customized': 'Yes',
-      'Design Image': imageUrl  // Visible property showing the complete design URL
+      'Düzenlendi': 'Evet',
+      'Tasarım': imageUrl  // Visible property showing the complete design URL
     };
     
     // Add element URLs to properties
@@ -495,8 +495,47 @@ console.log('=========================');
         
         closeModal();
         
-        // Redirect to cart page
-        window.location.href = '/cart';
+        // Try to open cart drawer instead of redirecting to cart page
+        console.log('Attempting to open cart drawer...');
+        
+        // Method 1: Dispatch cart update event (works with many themes)
+        document.dispatchEvent(new CustomEvent('cart:refresh'));
+        window.dispatchEvent(new CustomEvent('cart:updated'));
+        
+        // Method 2: Try to find and click cart icon/button
+        const cartSelectors = [
+          'cart-drawer',
+          '[data-cart-drawer]',
+          '[data-open-cart]',
+          '.cart-icon',
+          '#cart-icon-bubble',
+          'a[href="/cart"]',
+          '.header__icon--cart',
+          '[aria-label*="cart" i]',
+          '[aria-label*="sepet" i]'
+        ];
+        
+        let cartOpened = false;
+        for (const selector of cartSelectors) {
+          const element = document.querySelector(selector);
+          if (element) {
+            console.log('Found cart element:', selector, element);
+            element.click();
+            cartOpened = true;
+            break;
+          }
+        }
+        
+        if (!cartOpened) {
+          console.log('No cart drawer found, checking for Shopify theme API...');
+          // Method 3: Try Shopify's theme cart drawer API
+          if (window.Shopify && window.Shopify.theme && window.Shopify.theme.cart) {
+            window.Shopify.theme.cart.open();
+            console.log('Opened cart via Shopify theme API');
+          } else {
+            console.log('Cart drawer not available, staying on product page');
+          }
+        }
       } else {
         const error = await response.json();
         console.error('Cart add error:', error);
