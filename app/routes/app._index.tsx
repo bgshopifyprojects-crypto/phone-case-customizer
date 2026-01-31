@@ -60,6 +60,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Index() {
   const { settings } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
+  const scriptTagFetcher = useFetcher();
   const [themeColor, setThemeColor] = useState(settings.themeColor);
   const [buttonColor, setButtonColor] = useState(settings.buttonColor);
   const [buttonText, setButtonText] = useState(settings.buttonText);
@@ -68,6 +69,8 @@ export default function Index() {
   
   const isLoading = fetcher.state === "submitting";
   const isSaved = fetcher.data?.success;
+  const isRegisteringScriptTag = scriptTagFetcher.state === "submitting";
+  const scriptTagRegistered = scriptTagFetcher.data?.success;
   
   useEffect(() => {
     if (isSaved) {
@@ -87,6 +90,13 @@ export default function Index() {
     formData.append("buttonLogoUrl", buttonLogoUrl);
     formData.append("textColors", textColors);
     fetcher.submit(formData, { method: "POST" });
+  };
+  
+  const handleRegisterScriptTag = () => {
+    scriptTagFetcher.submit({}, { 
+      method: "POST", 
+      action: "/app/register-script-tag" 
+    });
   };
   
   return (
