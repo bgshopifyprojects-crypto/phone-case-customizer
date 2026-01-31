@@ -148,12 +148,29 @@ function App() {
 
     document.addEventListener('variant:change', handleVariantChange)
     document.addEventListener('variantChange', handleVariantChange)
+    
+    // Listen for our custom variant change event
+    const handleCustomizerVariantChange = (event) => {
+      console.log('Customizer variant change event:', event.detail)
+      if (event.detail) {
+        setCurrentVariantId(event.detail.variantId)
+        if (event.detail.backgroundUrl) {
+          setPhoneCaseUrl(event.detail.backgroundUrl)
+        }
+        if (event.detail.productImageUrl) {
+          setProductImageUrl(event.detail.productImageUrl)
+        }
+      }
+    }
+    
+    window.addEventListener('customizer:variantChanged', handleCustomizerVariantChange)
 
     // Cleanup
     return () => {
       observer.disconnect()
       document.removeEventListener('variant:change', handleVariantChange)
       document.removeEventListener('variantChange', handleVariantChange)
+      window.removeEventListener('customizer:variantChanged', handleCustomizerVariantChange)
     }
   }, [currentVariantId])
 

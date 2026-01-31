@@ -146,6 +146,15 @@ console.log('=========================');
       rootElement.setAttribute('data-variant-id', variantData.id);
       rootElement.setAttribute('data-phone-case-url', variantData.backgroundUrl);
       rootElement.setAttribute('data-product-image-url', variantData.productImageUrl);
+      
+      // Dispatch custom event to notify React app about variant change
+      window.dispatchEvent(new CustomEvent('customizer:variantChanged', {
+        detail: {
+          variantId: variantData.id,
+          backgroundUrl: variantData.backgroundUrl,
+          productImageUrl: variantData.productImageUrl
+        }
+      }));
     }
   }
 
@@ -323,8 +332,29 @@ console.log('=========================');
 <script>
 // Remove frame images and their parent containers from product page
 (function() {
+  let lastVariantId = null;
+  
   function hideFrameImages() {
     console.log('Searching for frame images to hide...');
+    
+    // Check if variant changed by looking at URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentVariantId = urlParams.get('variant');
+    
+    if (currentVariantId && currentVariantId !== lastVariantId) {
+      console.log('Variant changed detected! Old:', lastVariantId, 'New:', currentVariantId);
+      lastVariantId = currentVariantId;
+      
+      // Update the customizer root element with new variant
+      const rootElement = document.getElementById('phone-case-root');
+      if (rootElement) {
+        // Trigger variant update by directly calling the update function
+        const event = new CustomEvent('variant:change', {
+          detail: { variant: { id: currentVariantId } }
+        });
+        document.dispatchEvent(event);
+      }
+    }
     
     // Find all product media containers (li elements)
     const mediaContainers = document.querySelectorAll('li.product-media-container, li[class*="product-media"], li[class*="media"]');
@@ -423,6 +453,8 @@ console.log('=========================');
     if (root && window.ReactDOM) {
       window.ReactDOM.unmountComponentAtNode(root);
     }
+    // Refresh the page when modal closes
+    window.location.reload();
   }
   
   // Close button is now handled by React component
