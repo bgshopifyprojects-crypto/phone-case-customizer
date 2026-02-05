@@ -3,6 +3,180 @@ import prisma from "../db.server";
 import { generateDesignImage, uploadToShopifyFiles, type DesignData } from "../utils/image-generator";
 import { authenticate } from "../shopify.server";
 
+/**
+ * Upload a file to Shopify Files API and wait for the URL to be available
+ */
+async function uploadImageToShopifyFiles(
+  admin: any,
+  fileBuffer: Buffer,
+  filename: string,
+  mimeType: string = 'image/png'
+): Promise<string> {
+  try {
+    console.log(`Uploading ${filename} to Shopify Files...`);
+    
+    // Step 1: Create staged upload
+    const stagedUploadResponse = await admin.graphql(
+      `#graphql
+      mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
+        stagedUploadsCreate(input: $input) {
+          stagedTargets {
+            url
+            resourceUrl
+            parameters {
+              name
+              value
+            }
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`,
+      {
+        variables: {
+          input: [
+            {
+              filename: filename,
+              mimeType: mimeType,
+              resource: "FILE",
+              fileSize: fileBuffer.length.toString(),
+              httpMethod: "POST"
+            }
+          ]
+        }
+      }
+    );
+
+    const stagedUploadData = await stagedUploadResponse.json();
+    console.log('Staged upload response:', JSON.stringify(stagedUploadData, null, 2));
+
+    if (stagedUploadData.data?.stagedUploadsCreate?.userErrors?.length > 0) {
+      throw new Error(`Staged upload error: ${JSON.stringify(stagedUploadData.data.stagedUploadsCreate.userErrors)}`);
+    }
+
+    const stagedTarget = stagedUploadData.data?.stagedUploadsCreate?.stagedTargets?.[0];
+    if (!stagedTarget) {
+      throw new Error('No staged target returned');
+    }
+
+    // Step 2: Upload file to Google Cloud Storage
+    const formData = new FormData();
+    
+    // Add all parameters from Shopify
+    for (const param of stagedTarget.parameters) {
+      formData.append(param.name, param.value);
+    }
+    
+    // Add the file as a Blob
+    const blob = new Blob([fileBuffer], { type: mimeType });
+    formData.append('file', blob, filename);
+
+    console.log(`Uploading to GCS: ${stagedTarget.url}`);
+    const uploadResponse = await fetch(stagedTarget.url, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
+    }
+
+    console.log(`Upload successful, status: ${uploadResponse.status}`);
+
+    // Step 3: Create file in Shopify
+    const fileCreateResponse = await admin.graphql(
+      `#graphql
+      mutation fileCreate($files: [FileCreateInput!]!) {
+        fileCreate(files: $files) {
+          files {
+            id
+            ... on GenericFile {
+              url
+            }
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`,
+      {
+        variables: {
+          files: [
+            {
+              originalSource: stagedTarget.resourceUrl,
+              contentType: "FILE"
+            }
+          ]
+        }
+      }
+    );
+
+    const fileCreateData = await fileCreateResponse.json();
+    console.log('File create response:', JSON.stringify(fileCreateData, null, 2));
+
+    if (fileCreateData.data?.fileCreate?.userErrors?.length > 0) {
+      throw new Error(`File create error: ${JSON.stringify(fileCreateData.data.fileCreate.userErrors)}`);
+    }
+
+    const file = fileCreateData.data?.fileCreate?.files?.[0];
+    if (!file) {
+      throw new Error('No file returned from fileCreate');
+    }
+
+    // Step 4: Wait for URL to become available (Shopify processes files asynchronously)
+    const fileId = file.id;
+    let fileUrl = file.url;
+    let attempts = 0;
+    const maxAttempts = 10;
+    const delayMs = 2000; // 2 seconds between attempts
+
+    while (!fileUrl && attempts < maxAttempts) {
+      attempts++;
+      console.log(`Waiting for file URL (attempt ${attempts}/${maxAttempts})...`);
+      
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+
+      // Query the file to get its URL
+      const fileQueryResponse = await admin.graphql(
+        `#graphql
+        query getFile($id: ID!) {
+          node(id: $id) {
+            ... on GenericFile {
+              id
+              url
+            }
+          }
+        }`,
+        {
+          variables: {
+            id: fileId
+          }
+        }
+      );
+
+      const fileQueryData = await fileQueryResponse.json();
+      console.log(`File query response (attempt ${attempts}):`, JSON.stringify(fileQueryData, null, 2));
+      
+      fileUrl = fileQueryData.data?.node?.url;
+    }
+
+    if (!fileUrl) {
+      throw new Error(`File URL not available after ${maxAttempts} attempts`);
+    }
+
+    console.log(`File uploaded successfully: ${fileUrl}`);
+    return fileUrl;
+
+  } catch (error) {
+    console.error('Error uploading to Shopify Files:', error);
+    throw new Error(`Failed to upload to Shopify Files: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
 export async function action({ request }: ActionFunctionArgs) {
   try {
     const formData = await request.formData();
@@ -62,56 +236,66 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ error: 'Invalid design data structure' }, { status: 400 });
     }
     
-    // Convert all uploaded images to base64 for storage
+    // Authenticate to get admin API access
+    // For app proxy, we need to authenticate using the shop domain
+    const { admin } = await authenticate.public.appProxy(request);
+    
+    // Convert files to buffers
     const completeImageBuffer = Buffer.from(await designImageFile.arrayBuffer());
-    const completeBase64 = completeImageBuffer.toString('base64');
-    const completeDataUrl = `data:image/png;base64,${completeBase64}`;
-    
     const emptyCaseBuffer = Buffer.from(await emptyCaseFile.arrayBuffer());
-    const emptyCaseBase64 = emptyCaseBuffer.toString('base64');
-    const emptyCaseDataUrl = `data:image/png;base64,${emptyCaseBase64}`;
-    
     const designOnlyBuffer = Buffer.from(await designOnlyFile.arrayBuffer());
-    const designOnlyBase64 = designOnlyBuffer.toString('base64');
-    const designOnlyDataUrl = `data:image/png;base64,${designOnlyBase64}`;
     
-    // Convert element images to base64
-    const elementDataUrls: string[] = [];
-    for (const elementFile of elementFiles) {
-      const elementBuffer = Buffer.from(await elementFile.arrayBuffer());
-      const elementBase64 = elementBuffer.toString('base64');
-      const elementDataUrl = `data:image/png;base64,${elementBase64}`;
-      elementDataUrls.push(elementDataUrl);
+    // Upload images to Shopify Files
+    console.log('Uploading images to Shopify Files...');
+    const timestamp = Date.now();
+    
+    const completeImageUrl = await uploadImageToShopifyFiles(
+      admin,
+      completeImageBuffer,
+      `design-complete-${timestamp}.png`
+    );
+    
+    const emptyCaseUrl = await uploadImageToShopifyFiles(
+      admin,
+      emptyCaseBuffer,
+      `design-empty-${timestamp}.png`
+    );
+    
+    const designOnlyUrl = await uploadImageToShopifyFiles(
+      admin,
+      designOnlyBuffer,
+      `design-only-${timestamp}.png`
+    );
+    
+    // Upload element images
+    const elementUrls: string[] = [];
+    for (let i = 0; i < elementFiles.length; i++) {
+      const elementBuffer = Buffer.from(await elementFiles[i].arrayBuffer());
+      const elementUrl = await uploadImageToShopifyFiles(
+        admin,
+        elementBuffer,
+        `design-element-${i}-${timestamp}.png`
+      );
+      elementUrls.push(elementUrl);
     }
     
-    console.log(`Converted ${elementDataUrls.length} element images to base64`);
+    console.log(`Uploaded ${elementUrls.length} element images to Shopify Files`);
     
-    // Store in database with element images as JSON array
+    // Store in database with Shopify CDN URLs
     const design = await prisma.design.create({
       data: {
         shop: shopDomain,
         designData: designDataStr,
-        imageUrl: completeDataUrl, // Complete design with frame
-        emptyCaseUrl: emptyCaseDataUrl, // Empty phone case
-        designOnlyUrl: designOnlyDataUrl, // Design elements only
-        elementImages: JSON.stringify(elementDataUrls), // Store element images as JSON
+        imageUrl: completeImageUrl, // Complete design with frame
+        emptyCaseUrl: emptyCaseUrl, // Empty phone case
+        designOnlyUrl: designOnlyUrl, // Design elements only
+        elementImages: JSON.stringify(elementUrls), // Store element URLs as JSON
       },
     });
     
-    // Generate public URLs to serve the images
-    const baseUrl = new URL(request.url).origin;
-    const publicImageUrl = `${baseUrl}/design-image/${design.id}`;
-    const emptyCaseUrl = `${baseUrl}/design-image/${design.id}/empty`;
-    const designOnlyUrl = `${baseUrl}/design-image/${design.id}/design-only`;
-    
-    // Generate URLs for element images
-    const elementUrls = elementDataUrls.map((_, index) => 
-      `${baseUrl}/design-image/${design.id}/element/${index}`
-    );
-    
     return Response.json({
       designId: design.id,
-      imageUrl: publicImageUrl,
+      imageUrl: completeImageUrl,
       emptyCaseUrl: emptyCaseUrl,
       designOnlyUrl: designOnlyUrl,
       elementUrls: elementUrls,
@@ -119,6 +303,9 @@ export async function action({ request }: ActionFunctionArgs) {
     
   } catch (error) {
     console.error('Error in app proxy save-design:', error);
-    return Response.json({ error: 'An unexpected error occurred' }, { status: 500 });
+    return Response.json({ 
+      error: 'An unexpected error occurred', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
   }
 }

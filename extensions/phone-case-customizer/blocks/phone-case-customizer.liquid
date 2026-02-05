@@ -43,27 +43,25 @@
     
     {% comment %}
       Frame URL logic:
-      - If product has only 1 variant, look for an image with alt text = "frame"
-      - If found, use that as the frame
-      - Otherwise, use default frame (which triggers auto-generation)
+      - Look for an image with alt text = "frame" (regardless of variant count)
+      - If found, use that as a custom frame layer (in addition to auto-generated frame)
+      - Auto-generated frame will always be created from product image
     {% endcomment %}
-    {% assign frame_url = 'phone-case-frame.png' | asset_url %}
-    {% assign custom_frame_found = false %}
+    {% assign custom_frame_url = '' %}
+    {% assign has_custom_frame = false %}
     
-    {% if product.variants.size == 1 %}
-      {% for image in product.images %}
-        {% assign alt_lower = image.alt | downcase %}
-        {% if alt_lower == 'frame' %}
-          {% assign frame_url = image | image_url: width: 600 %}
-          {% assign custom_frame_found = true %}
-          {% break %}
-        {% endif %}
-      {% endfor %}
-    {% endif %}
+    {% for image in product.images %}
+      {% assign alt_lower = image.alt | downcase %}
+      {% if alt_lower == 'frame' %}
+        {% assign custom_frame_url = image | image_url: width: 600 %}
+        {% assign has_custom_frame = true %}
+        {% break %}
+      {% endif %}
+    {% endfor %}
     
     <div id="phone-case-root" 
-         data-frame-url="{{ frame_url }}"
-         data-custom-frame="{{ custom_frame_found }}"
+         data-custom-frame-url="{{ custom_frame_url }}"
+         data-has-custom-frame="{{ has_custom_frame }}"
          data-phone-case-url="{{ background_url }}"
          data-product-image-url="{{ product_image_url }}"
          data-variant-id="{{ product.selected_or_first_available_variant.id }}"
@@ -106,8 +104,8 @@ console.log('Product tags:', {{ product.tags | json }});
 console.log('=========================');
 console.log('Data attributes set:');
 console.log('  background_url:', '{{ background_url }}');
-console.log('  frame_url:', '{{ frame_url }}');
-console.log('  custom_frame_found:', {{ custom_frame_found }});
+console.log('  custom_frame_url:', '{{ custom_frame_url }}');
+console.log('  has_custom_frame:', {{ has_custom_frame }});
 console.log('  variants_count:', {{ product.variants.size }});
 console.log('=========================');
 
@@ -554,20 +552,6 @@ console.log('=========================');
 {
   "name": "Phone Case Customizer",
   "target": "section",
-  "settings": [
-    {
-      "type": "text",
-      "id": "button_text",
-      "label": "Button Text",
-      "default": "Customize Your Phone Case"
-    },
-    {
-      "type": "color",
-      "id": "theme_color",
-      "label": "Theme Color",
-      "default": "#00a8e8",
-      "info": "Primary color for buttons and highlights in the customizer"
-    }
-  ]
+  "settings": []
 }
 {% endschema %}

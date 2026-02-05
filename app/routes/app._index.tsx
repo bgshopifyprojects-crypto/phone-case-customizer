@@ -100,15 +100,15 @@ export default function Index() {
   };
   
   return (
-    <s-page heading="Phone Case Customizer Settings">
-      <s-section heading="Theme Color">
+    <s-page heading="Telefon Kılıfı Özelleştirici Ayarları">
+      <s-section heading="Tema Rengi">
         <s-paragraph>
-          Choose a primary color for the phone case customizer interface. This color will be used for buttons, active states, and highlights.
+          Telefon kılıfı özelleştirici arayüzü için birincil renk seçin. Bu renk butonlar, aktif durumlar ve vurgular için kullanılacaktır.
         </s-paragraph>
         
         <s-stack direction="block" gap="base">
           <s-stack direction="inline" gap="base" align="center">
-            <s-text>Current Color:</s-text>
+            <s-text>Mevcut Renk:</s-text>
             <div
               style={{
                 width: "60px",
@@ -123,7 +123,7 @@ export default function Index() {
           </s-stack>
           
           <s-stack direction="inline" gap="base" align="center">
-            <s-text>Pick Color:</s-text>
+            <s-text>Renk Seç:</s-text>
             <input
               type="color"
               value={themeColor}
@@ -153,15 +153,15 @@ export default function Index() {
           </s-stack>
           
           <s-stack direction="block" gap="tight">
-            <s-text variant="subdued">Popular Colors:</s-text>
+            <s-text variant="subdued">Popüler Renkler:</s-text>
             <s-stack direction="inline" gap="tight">
               {[
-                { name: "Blue", color: "#00a8e8" },
-                { name: "Purple", color: "#7c3aed" },
-                { name: "Pink", color: "#ec4899" },
-                { name: "Green", color: "#10b981" },
-                { name: "Orange", color: "#f97316" },
-                { name: "Red", color: "#ef4444" },
+                { name: "Mavi", color: "#00a8e8" },
+                { name: "Mor", color: "#7c3aed" },
+                { name: "Pembe", color: "#ec4899" },
+                { name: "Yeşil", color: "#10b981" },
+                { name: "Turuncu", color: "#f97316" },
+                { name: "Kırmızı", color: "#ef4444" },
               ].map((preset) => (
                 <button
                   key={preset.color}
@@ -187,23 +187,23 @@ export default function Index() {
               variant="primary"
               {...(isLoading ? { loading: true } : {})}
             >
-              Save Theme Color
+              Tema Rengini Kaydet
             </s-button>
             {isSaved && (
-              <s-text variant="success">✓ Settings saved successfully!</s-text>
+              <s-text variant="success">✓ Ayarlar başarıyla kaydedildi!</s-text>
             )}
           </s-stack>
         </s-stack>
       </s-section>
       
-      <s-section heading="Customize Button Color">
+      <s-section heading="Özelleştir Butonu Rengi">
         <s-paragraph>
-          Choose the color for the "Customize Your Phone Case" button that appears on product pages. This is the button customers click to start customizing.
+          Ürün sayfalarında görünen "Telefon Kılıfınızı Özelleştirin" butonunun rengini seçin. Bu, müşterilerin özelleştirmeye başlamak için tıkladığı butondur.
         </s-paragraph>
         
         <s-stack direction="block" gap="base">
           <s-stack direction="inline" gap="base" align="center">
-            <s-text>Current Color:</s-text>
+            <s-text>Mevcut Renk:</s-text>
             <div
               style={{
                 width: "60px",
@@ -218,7 +218,7 @@ export default function Index() {
           </s-stack>
           
           <s-stack direction="inline" gap="base" align="center">
-            <s-text>Pick Color:</s-text>
+            <s-text>Renk Seç:</s-text>
             <input
               type="color"
               value={buttonColor}
@@ -248,15 +248,15 @@ export default function Index() {
           </s-stack>
           
           <s-stack direction="block" gap="tight">
-            <s-text variant="subdued">Popular Colors:</s-text>
+            <s-text variant="subdued">Popüler Renkler:</s-text>
             <s-stack direction="inline" gap="tight">
               {[
-                { name: "Purple", color: "#667eea" },
-                { name: "Blue", color: "#3b82f6" },
-                { name: "Pink", color: "#ec4899" },
-                { name: "Green", color: "#10b981" },
-                { name: "Orange", color: "#f97316" },
-                { name: "Red", color: "#ef4444" },
+                { name: "Mor", color: "#667eea" },
+                { name: "Mavi", color: "#3b82f6" },
+                { name: "Pembe", color: "#ec4899" },
+                { name: "Yeşil", color: "#10b981" },
+                { name: "Turuncu", color: "#f97316" },
+                { name: "Kırmızı", color: "#ef4444" },
               ].map((preset) => (
                 <button
                   key={preset.color}
@@ -282,23 +282,23 @@ export default function Index() {
               variant="primary"
               {...(isLoading ? { loading: true } : {})}
             >
-              Save Settings
+              Ayarları Kaydet
             </s-button>
             {isSaved && (
-              <s-text variant="success">✓ Settings saved successfully!</s-text>
+              <s-text variant="success">✓ Ayarlar başarıyla kaydedildi!</s-text>
             )}
           </s-stack>
         </s-stack>
       </s-section>
       
-      <s-section heading="Customize Button Text">
+      <s-section heading="Özelleştir Butonu Metni">
         <s-paragraph>
-          Set the text that appears on the customize button on product pages.
+          Ürün sayfalarındaki özelleştir butonunda görünecek metni ayarlayın.
         </s-paragraph>
         
         <s-stack direction="block" gap="base">
           <s-stack direction="inline" gap="base" align="center">
-            <s-text>Button Text:</s-text>
+            <s-text>Buton Metni:</s-text>
             <input
               type="text"
               value={buttonText}
@@ -320,27 +320,27 @@ export default function Index() {
               variant="primary"
               {...(isLoading ? { loading: true } : {})}
             >
-              Save Settings
+              Ayarları Kaydet
             </s-button>
             {isSaved && (
-              <s-text variant="success">✓ Settings saved successfully!</s-text>
+              <s-text variant="success">✓ Ayarlar başarıyla kaydedildi!</s-text>
             )}
           </s-stack>
         </s-stack>
       </s-section>
       
-      <s-section heading="Customize Button Logo">
+      <s-section heading="Özelleştir Butonu Logosu">
         <s-paragraph>
-          Add a custom logo URL to display on the customize button. If no logo is provided, a palette emoji (🎨) will be shown. Recommended size: 24x24 pixels or larger.
+          Özelleştir butonunda görüntülenecek özel bir logo URL'si ekleyin. Logo sağlanmazsa, palet emojisi (🎨) gösterilecektir. Önerilen boyut: 24x24 piksel veya daha büyük.
         </s-paragraph>
         
         <s-stack direction="block" gap="base">
           {buttonLogoUrl && (
             <s-stack direction="inline" gap="base" align="center">
-              <s-text>Current Logo:</s-text>
+              <s-text>Mevcut Logo:</s-text>
               <img 
                 src={buttonLogoUrl} 
-                alt="Button logo" 
+                alt="Buton logosu" 
                 style={{
                   width: "40px",
                   height: "40px",
@@ -381,13 +381,13 @@ export default function Index() {
                   fontSize: "14px",
                 }}
               >
-                Clear
+                Temizle
               </button>
             )}
           </s-stack>
           
           <s-text variant="subdued" style={{ fontSize: "13px" }}>
-            Tip: Upload your logo to Shopify Files (Settings → Files) and paste the URL here, or use any publicly accessible image URL.
+            İpucu: Logonuzu Shopify Dosyalarına yükleyin (Ayarlar → Dosyalar) ve URL'yi buraya yapıştırın veya herhangi bir genel erişilebilir resim URL'si kullanın.
           </s-text>
           
           <s-stack direction="inline" gap="base">
@@ -396,23 +396,23 @@ export default function Index() {
               variant="primary"
               {...(isLoading ? { loading: true } : {})}
             >
-              Save Settings
+              Ayarları Kaydet
             </s-button>
             {isSaved && (
-              <s-text variant="success">✓ Settings saved successfully!</s-text>
+              <s-text variant="success">✓ Ayarlar başarıyla kaydedildi!</s-text>
             )}
           </s-stack>
         </s-stack>
       </s-section>
       
-      <s-section heading="Text Color Palette">
+      <s-section heading="Metin Renk Paleti">
         <s-paragraph>
-          Customize the color palette available for text in the customizer. Enter up to 16 hex colors separated by commas.
+          Özelleştiricideki metin için kullanılabilir renk paletini özelleştirin. Virgülle ayrılmış en fazla 16 hex renk girin.
         </s-paragraph>
         
         <s-stack direction="block" gap="base">
           <s-stack direction="inline" gap="base" align="center">
-            <s-text>Current Colors:</s-text>
+            <s-text>Mevcut Renkler:</s-text>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {textColors.split(',').map((color, index) => (
                 <div
@@ -432,7 +432,7 @@ export default function Index() {
           </s-stack>
           
           <s-stack direction="block" gap="tight">
-            <s-text>Color Palette (comma-separated hex colors):</s-text>
+            <s-text>Renk Paleti (virgülle ayrılmış hex renkler):</s-text>
             <textarea
               value={textColors}
               onChange={(e) => setTextColors(e.target.value)}
@@ -449,7 +449,7 @@ export default function Index() {
               }}
             />
             <s-text variant="subdued" style={{ fontSize: "13px" }}>
-              Example: #FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000
+              Örnek: #FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000
             </s-text>
           </s-stack>
           
@@ -459,18 +459,18 @@ export default function Index() {
               variant="primary"
               {...(isLoading ? { loading: true } : {})}
             >
-              Save Text Colors
+              Metin Renklerini Kaydet
             </s-button>
             {isSaved && (
-              <s-text variant="success">✓ Settings saved successfully!</s-text>
+              <s-text variant="success">✓ Ayarlar başarıyla kaydedildi!</s-text>
             )}
           </s-stack>
         </s-stack>
       </s-section>
       
-      <s-section heading="Preview">
+      <s-section heading="Önizleme">
         <s-paragraph>
-          Preview how your colors will look:
+          Renklerinizin nasıl görüneceğini önizleyin:
         </s-paragraph>
         <s-box
           padding="base"
@@ -479,7 +479,7 @@ export default function Index() {
           background="subdued"
         >
           <s-stack direction="block" gap="base">
-            <s-text variant="subdued">Customize Button (Product Page):</s-text>
+            <s-text variant="subdued">Özelleştir Butonu (Ürün Sayfası):</s-text>
             <button
               style={{
                 padding: "15px 30px",
@@ -503,7 +503,7 @@ export default function Index() {
               {buttonText}
             </button>
             
-            <s-text variant="subdued" style={{ marginTop: "20px" }}>Customizer Interface Buttons:</s-text>
+            <s-text variant="subdued" style={{ marginTop: "20px" }}>Özelleştirici Arayüz Butonları:</s-text>
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <button
                 style={{
@@ -516,7 +516,7 @@ export default function Index() {
                   cursor: "pointer",
                 }}
               >
-                Primary Button
+                Birincil Buton
               </button>
               <button
                 style={{
@@ -529,7 +529,7 @@ export default function Index() {
                   cursor: "pointer",
                 }}
               >
-                Secondary Button
+                İkincil Buton
               </button>
               <div
                 style={{
@@ -540,7 +540,7 @@ export default function Index() {
                   fontWeight: "500",
                 }}
               >
-                Active State
+                Aktif Durum
               </div>
             </div>
           </s-stack>
