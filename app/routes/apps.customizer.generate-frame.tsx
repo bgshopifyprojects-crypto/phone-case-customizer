@@ -36,9 +36,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     console.log('Image dimensions:', width, 'x', height);
 
     // Define the customizable area margins
-    // Final working values: left 84px, right 82px, top/bottom 66px
-    const topMargin = 66;
-    const bottomMargin = 66;
+    // Final working values: left 84px, right 82px, top 58px, bottom 60px
+    const topMargin = 58;
+    const bottomMargin = 60;
     const leftMargin = 84;
     const rightMargin = 82;
 
