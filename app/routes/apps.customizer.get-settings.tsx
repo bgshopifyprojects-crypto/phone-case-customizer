@@ -23,7 +23,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return Response.json({ 
         themeColor: "#00a8e8", // Default color
         buttonColor: "#667eea", // Default button color
-        buttonText: "Customize Your Phone Case", // Default button text
+        buttonText: "Kendin Tasarla", // Default button text
         buttonLogoUrl: null, // No logo by default
         textColors: "#FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000,#00FF00,#008000,#00FFFF,#008080,#0000FF,#000080,#FF00FF,#800080" // Default colors
       });
@@ -38,7 +38,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return Response.json({
       themeColor: settings?.themeColor || "#00a8e8",
       buttonColor: settings?.buttonColor || "#667eea",
-      buttonText: settings?.buttonText || "Customize Your Phone Case",
+      buttonText: settings?.buttonText || "Kendin Tasarla",
       buttonLogoUrl: settings?.buttonLogoUrl || null,
       textColors: settings?.textColors || "#FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000,#00FF00,#008000,#00FFFF,#008080,#0000FF,#000080,#FF00FF,#800080"
     });
@@ -48,7 +48,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return Response.json({ 
       themeColor: "#00a8e8", // Default color on error
       buttonColor: "#667eea", // Default button color on error
-      buttonText: "Customize Your Phone Case", // Default button text on error
+      buttonText: "Kendin Tasarla", // Default button text on error
       buttonLogoUrl: null, // No logo by default on error
       textColors: "#FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000,#00FF00,#008000,#00FFFF,#008080,#0000FF,#000080,#FF00FF,#800080" // Default colors on error
     });

@@ -111,7 +111,7 @@ export async function action({ request }: ActionFunctionArgs) {
         shop: session.shop,
         themeColor: "#00a8e8",
         buttonColor: "#667eea",
-        buttonText: "Customize Your Phone Case",
+        buttonText: "Kendin Tasarla",
         scriptTagId: scriptTagId,
       },
     });

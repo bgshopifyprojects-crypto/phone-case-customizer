@@ -55,7 +55,7 @@ model AppSettings {
   shop          String    @unique
   themeColor    String    @default("#00a8e8") // Primary theme color (default: blue)
   buttonColor   String    @default("#667eea") // Customize button color (default: purple gradient start)
-  buttonText    String    @default("Customize Your Phone Case") // Customize button text
+  buttonText    String    @default("Kendin Tasarla") // Customize button text
   buttonLogoUrl String?   // Optional logo URL for customize button
   textColors    String    @default("#FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000,#00FF00,#008000,#00FFFF,#008080,#0000FF,#000080,#FF00FF,#800080") // Comma-separated hex colors for text color palette
   scriptTagId   String?   // Shopify script tag ID for cart injection

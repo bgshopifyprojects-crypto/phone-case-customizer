@@ -2327,38 +2327,49 @@ function App() {
       for (let i = 0; i < placedTexts.length; i++) {
         const text = placedTexts[i]
         try {
-          // Create canvas for text
+          // Create canvas for text at ULTRA HIGH RESOLUTION (10x scale for crisp quality when printed)
           const textCanvas = document.createElement('canvas')
           const textCtx = textCanvas.getContext('2d')
           
-          // Set font to measure text
-          textCtx.font = `${text.fontStyle || 'normal'} ${text.fontWeight || 'normal'} ${text.fontSize}px ${text.fontFamily || 'Arial'}`
+          // Ultra high resolution scale factor for crisp text (10x for print quality)
+          const hiResScale = 10
+          const scaledFontSize = text.fontSize * hiResScale
           
-          // Measure text
+          // Set font to measure text at high resolution
+          textCtx.font = `${text.fontStyle || 'normal'} ${text.fontWeight || 'normal'} ${scaledFontSize}px ${text.fontFamily || 'Arial'}`
+          
+          // Measure text at high resolution
           const metrics = textCtx.measureText(text.content)
           const textWidth = metrics.width
-          const textHeight = text.fontSize * 1.5 // Approximate height with padding
+          const textHeight = scaledFontSize * 1.5 // Approximate height with padding
           
-          // Set canvas size with padding
-          const padding = 20
+          // Set canvas size with padding at high resolution
+          const padding = 40 * hiResScale
           textCanvas.width = textWidth + padding * 2
           textCanvas.height = textHeight + padding * 2
           
           // Re-set font after canvas resize (canvas resets on size change)
-          textCtx.font = `${text.fontStyle || 'normal'} ${text.fontWeight || 'normal'} ${text.fontSize}px ${text.fontFamily || 'Arial'}`
+          textCtx.font = `${text.fontStyle || 'normal'} ${text.fontWeight || 'normal'} ${scaledFontSize}px ${text.fontFamily || 'Arial'}`
           textCtx.fillStyle = text.color || '#000000'
           textCtx.textAlign = 'center'
           textCtx.textBaseline = 'middle'
           
-          // Apply text shadow if exists
+          // Apply text shadow if exists (scaled)
           if (text.textShadow) {
             const shadowMatch = text.textShadow.match(/(\d+)px\s+(\d+)px\s+(\d+)px\s+(#[0-9A-F]{6})/i)
             if (shadowMatch) {
-              textCtx.shadowOffsetX = parseInt(shadowMatch[1])
-              textCtx.shadowOffsetY = parseInt(shadowMatch[2])
-              textCtx.shadowBlur = parseInt(shadowMatch[3])
+              textCtx.shadowOffsetX = parseInt(shadowMatch[1]) * hiResScale
+              textCtx.shadowOffsetY = parseInt(shadowMatch[2]) * hiResScale
+              textCtx.shadowBlur = parseInt(shadowMatch[3]) * hiResScale
               textCtx.shadowColor = shadowMatch[4]
             }
+          }
+          
+          // Apply text stroke if exists (scaled)
+          if (text.textStroke && text.textStrokeWidth > 0) {
+            textCtx.strokeStyle = text.textStroke
+            textCtx.lineWidth = text.textStrokeWidth * hiResScale
+            textCtx.strokeText(text.content, textCanvas.width / 2, textCanvas.height / 2)
           }
           
           // Draw text centered

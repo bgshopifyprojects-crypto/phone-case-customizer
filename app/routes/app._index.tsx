@@ -23,7 +23,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         shop: session.shop,
         themeColor: "#00a8e8", // Default blue
         buttonColor: "#667eea", // Default purple
-        buttonText: "Customize Your Phone Case", // Default text
+        buttonText: "Kendin Tasarla", // Default text
       },
     });
   }
@@ -303,7 +303,7 @@ export default function Index() {
               type="text"
               value={buttonText}
               onChange={(e) => setButtonText(e.target.value)}
-              placeholder="Customize Your Phone Case"
+              placeholder="Kendin Tasarla"
               style={{
                 padding: "10px 16px",
                 border: "2px solid #e0e0e0",
