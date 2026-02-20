@@ -59,11 +59,23 @@
       {% endif %}
     {% endfor %}
     
+    {% comment %} Collect all product image URLs for Python frame detection {% endcomment %}
+    {% assign product_image_urls = '' %}
+    {% for image in product.images %}
+      {% assign image_url = image | image_url: width: 600 %}
+      {% if forloop.first %}
+        {% assign product_image_urls = image_url %}
+      {% else %}
+        {% assign product_image_urls = product_image_urls | append: ',' | append: image_url %}
+      {% endif %}
+    {% endfor %}
+    
     <div id="phone-case-root" 
          data-custom-frame-url="{{ custom_frame_url }}"
          data-has-custom-frame="{{ has_custom_frame }}"
          data-phone-case-url="{{ background_url }}"
          data-product-image-url="{{ product_image_url }}"
+         data-product-image-urls="{{ product_image_urls }}"
          data-variant-id="{{ product.selected_or_first_available_variant.id }}"
          data-designs-url="{{ 'pre-design-images.json' | asset_url }}" 
          data-theme-color="{{ block.settings.theme_color }}" 
@@ -333,14 +345,14 @@ console.log('=========================');
   let lastVariantId = null;
   
   function hideFrameImages() {
-    console.log('Searching for frame images to hide...');
+    // console.log('Searching for frame images to hide...');
     
     // Check if variant changed by looking at URL
     const urlParams = new URLSearchParams(window.location.search);
     const currentVariantId = urlParams.get('variant');
     
     if (currentVariantId && currentVariantId !== lastVariantId) {
-      console.log('Variant changed detected! Old:', lastVariantId, 'New:', currentVariantId);
+      // console.log('Variant changed detected! Old:', lastVariantId, 'New:', currentVariantId);
       lastVariantId = currentVariantId;
       
       // Update the customizer root element with new variant
@@ -357,7 +369,7 @@ console.log('=========================');
     // Find all product media containers (li elements)
     const mediaContainers = document.querySelectorAll('li.product-media-container, li[class*="product-media"], li[class*="media"]');
     
-    console.log('Found', mediaContainers.length, 'media containers');
+    // console.log('Found', mediaContainers.length, 'media containers');
     
     mediaContainers.forEach(container => {
       // Check if this container has an image with alt="frame"
@@ -365,7 +377,7 @@ console.log('=========================');
       if (img) {
         const alt = img.getAttribute('alt');
         if (alt && alt.toLowerCase() === 'frame') {
-          console.log('Found frame image in container, hiding:', container);
+          // console.log('Found frame image in container, hiding:', container);
           container.style.display = 'none';
           container.style.visibility = 'hidden';
           container.style.opacity = '0';

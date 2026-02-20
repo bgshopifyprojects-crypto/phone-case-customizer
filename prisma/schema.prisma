@@ -1,66 +1,82 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   provider = "sqlite"
   url      = "file:dev.sqlite"
 }
 
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
 }
 
 model Design {
-  id             String    @id @default(cuid())
-  shop           String
-  designData     String    // JSON string containing images, texts, and layers
-  imageUrl       String    // URL to the complete design image (with frame)
-  emptyCaseUrl   String?   // URL to the empty phone case image
-  designOnlyUrl  String?   // URL to the design elements only (transparent background)
-  elementImages  String?   // JSON array of individual element images (uploaded images + text as images)
-  orderId        String?   // Shopify order ID when design is purchased
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  
+  id            String   @id @default(cuid())
+  shop          String
+  designData    String
+  imageUrl      String
+  orderId       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  designOnlyUrl String?
+  emptyCaseUrl  String?
+  elementImages String?
+
   @@index([shop])
   @@index([orderId])
   @@index([createdAt])
 }
 
 model AppSettings {
-  id            String    @id @default(cuid())
-  shop          String    @unique
-  themeColor    String    @default("#00a8e8") // Primary theme color (default: blue)
-  buttonColor   String    @default("#667eea") // Customize button color (default: purple gradient start)
-  buttonText    String    @default("Kendin Tasarla") // Customize button text
-  buttonLogoUrl String?   // Optional logo URL for customize button
-  textColors    String    @default("#FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000,#00FF00,#008000,#00FFFF,#008080,#0000FF,#000080,#FF00FF,#800080") // Comma-separated hex colors for text color palette
-  scriptTagId   String?   // Shopify script tag ID for cart injection
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  id            String   @id @default(cuid())
+  shop          String   @unique
+  themeColor    String   @default("#00a8e8")
+  buttonColor   String   @default("#667eea")
+  buttonText    String   @default("Kendin Tasarla")
+  buttonLogoUrl String?
+  textColors    String   @default("#FFFFFF,#C0C0C0,#808080,#000000,#FF0000,#800000,#FFFF00,#808000,#00FF00,#008000,#00FFFF,#008080,#0000FF,#000080,#FF00FF,#800080")
+  scriptTagId   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   @@index([shop])
+}
+
+model ProductFrameCache {
+  id                  String    @id @default(cuid())
+  productId           String    @unique
+  shop                String
+  hasTransparentFrame Boolean   @default(false)
+  frameImageUrl       String?
+  transparencyPercent Float?
+  generatedFrameUrl   String?
+  processingStatus    String    @default("pending")
+  errorMessage        String?
+  productImageUrls    String
+  frameDetectedAt     DateTime?
+  frameGeneratedAt    DateTime?
+  lastCheckedAt       DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([productId])
+  @@index([shop])
+  @@index([hasTransparentFrame])
+  @@index([processingStatus])
 }

@@ -4,6 +4,7 @@
   "scripts": {
     "build": "react-router build",
     "dev": "shopify app dev",
+    "dev:reset": "node reset-dev.js && shopify app dev",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",
@@ -17,7 +18,9 @@
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
     "vite": "vite",
-    "typecheck": "react-router typegen && tsc --noEmit"
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "test:python": "cd phoneLayer && python find_transparent.py tests/test_find_transparents",
+    "test:python:mask": "cd phoneLayer && python apply_phone_mask.py tests/tests_apply_mask0/refer.png tests/tests_apply_mask0/target.png"
   },
   "type": "module",
   "engines": {

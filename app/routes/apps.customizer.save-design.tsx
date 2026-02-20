@@ -1,7 +1,7 @@
 import type { ActionFunctionArgs } from "react-router";
 import prisma from "../db.server";
 import { generateDesignImage, uploadToShopifyFiles, type DesignData } from "../utils/image-generator";
-import { authenticate } from "../shopify.server";
+import { authenticate, sessionStorage } from "../shopify.server";
 
 /**
  * Upload a file to Shopify Files API and wait for the URL to be available
@@ -238,7 +238,32 @@ export async function action({ request }: ActionFunctionArgs) {
     
     // Authenticate to get admin API access
     // For app proxy, we need to authenticate using the shop domain
-    const { admin } = await authenticate.public.appProxy(request);
+    let admin;
+    try {
+      const authResult = await authenticate.public.appProxy(request);
+      admin = authResult.admin;
+    } catch (error) {
+      console.error('Authentication failed:', error);
+      
+      // Check if it's a token expiration issue
+      const sessionId = `offline_${shopDomain}`;
+      const session = await sessionStorage.loadSession(sessionId);
+      
+      if (session && session.expires && new Date(session.expires) < new Date()) {
+        console.error('Access token has expired');
+        return Response.json({ 
+          error: 'Authentication expired',
+          details: 'Your app session has expired. Please reinstall the app from the Shopify admin.',
+          action: 'reinstall_required'
+        }, { status: 401 });
+      }
+      
+      // Generic authentication error
+      return Response.json({ 
+        error: 'Authentication failed',
+        details: error instanceof Error ? error.message : 'Unknown authentication error'
+      }, { status: 401 });
+    }
     
     // Convert files to buffers
     const completeImageBuffer = Buffer.from(await designImageFile.arrayBuffer());

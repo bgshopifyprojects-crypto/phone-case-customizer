@@ -3608,6 +3608,9 @@
   justify-content: space-between;
   padding: 1.5rem;
   border-bottom: 1px solid #e0e0e0;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .modal-header h2 {
@@ -3630,6 +3633,9 @@
   justify-content: center;
   transition: all 0.2s;
   line-height: 0;
+  position: relative;
+  z-index: 10000;
+  pointer-events: auto;
 }
 
 .modal-close:hover {

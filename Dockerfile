@@ -2,13 +2,16 @@ FROM node:20-alpine
 RUN apk add --no-cache \
     openssl \
     python3 \
+    py3-pip \
     make \
     g++ \
     cairo-dev \
     jpeg-dev \
     pango-dev \
     giflib-dev \
-    pixman-dev
+    pixman-dev \
+    py3-numpy \
+    py3-opencv
 
 EXPOSE 3000
 
@@ -21,6 +24,9 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY . .
+
+# Install Python dependencies for phoneLayer
+RUN pip3 install --no-cache-dir -r phoneLayer/requirements.txt --break-system-packages
 
 RUN npm run build
 
