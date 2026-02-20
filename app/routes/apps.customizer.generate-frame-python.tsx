@@ -1,6 +1,11 @@
-import type { ActionFunctionArgs } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { generateFrame } from "../../lib/python-bridge";
 import db from "../db.server";
+
+// Dummy loader to ensure route is registered (POST requests use action)
+export async function loader({ request }: LoaderFunctionArgs) {
+  return Response.json({ error: 'Use POST method' }, { status: 405 });
+}
 
 export async function action({ request }: ActionFunctionArgs) {
   try {
