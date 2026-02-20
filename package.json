@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "react-router build",
+    "prebuild": "rm -rf build .react-router",
     "dev": "shopify app dev",
     "dev:reset": "node reset-dev.js && shopify app dev",
     "config:link": "shopify app config link",
