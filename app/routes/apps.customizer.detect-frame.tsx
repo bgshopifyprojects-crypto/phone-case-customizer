@@ -3,6 +3,7 @@ import { findTransparentImages } from "../../lib/python-bridge";
 import db from "../db.server";
 
 export async function action({ request }: ActionFunctionArgs) {
+  // Frame detection endpoint for Python-based transparent frame detection
   try {
     const { productId, imageUrls, shop } = await request.json();
     
