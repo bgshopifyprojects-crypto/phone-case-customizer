@@ -25,8 +25,8 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY . .
 
-# Install Python dependencies for phoneLayer
-RUN pip3 install --no-cache-dir -r phoneLayer/requirements.txt --break-system-packages
+# Python dependencies are already installed via apk (py3-opencv, py3-numpy)
+# No need to install from pip
 
 RUN npm run build
 
