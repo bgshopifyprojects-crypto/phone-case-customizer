@@ -16,6 +16,10 @@
 .phone-case-modal {
   box-sizing: border-box;
   
+  /* Prevent iOS pull-to-refresh and overscroll */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  
   /* Prevent page zoom on mobile - only allow design element manipulation */
   touch-action: pan-x pan-y;
   -ms-touch-action: pan-x pan-y;
@@ -73,6 +77,53 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+}
+
+/* Remove iOS Safari's clear button (X) from ALL input fields */
+.phone-case-modal input[type="text"]::-webkit-search-decoration,
+.phone-case-modal input[type="text"]::-webkit-search-cancel-button,
+.phone-case-modal input[type="text"]::-webkit-search-results-button,
+.phone-case-modal input[type="text"]::-webkit-search-results-decoration,
+.phone-case-modal input[type="search"]::-webkit-search-decoration,
+.phone-case-modal input[type="search"]::-webkit-search-cancel-button,
+.phone-case-modal input[type="search"]::-webkit-search-results-button,
+.phone-case-modal input[type="search"]::-webkit-search-results-decoration,
+.phone-case-modal input[type="number"]::-webkit-search-decoration,
+.phone-case-modal input[type="number"]::-webkit-search-cancel-button,
+.phone-case-modal input[type="number"]::-webkit-search-results-button,
+.phone-case-modal input[type="number"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Remove the clear button that appears on regular text and number inputs in iOS */
+.phone-case-modal input::-webkit-textfield-decoration-container {
+  display: none;
+}
+
+.phone-case-modal input::-webkit-clear-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+/* Additional iOS-specific input clear button removal */
+.phone-case-modal input[type="text"]::-webkit-clear-button,
+.phone-case-modal input[type="search"]::-webkit-clear-button,
+.phone-case-modal input[type="number"]::-webkit-clear-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Remove inner spin buttons on number inputs (bonus cleanup) */
+.phone-case-modal input[type="number"]::-webkit-inner-spin-button,
+.phone-case-modal input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
 }
 
 /* Reset button defaults but allow styled buttons to keep their styles */
