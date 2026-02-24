@@ -84,6 +84,43 @@ function App() {
     }
   }, [themeColor])
 
+  // Prevent iOS pull-to-refresh when modal is open
+  useEffect(() => {
+    let startY = 0
+    
+    const preventPullToRefresh = (e) => {
+      const target = e.target
+      // Check if we're interacting with a draggable element or the phone screen
+      const isDraggableElement = target.closest('.design-element') || 
+                                  target.closest('.phone-screen') ||
+                                  target.closest('.phone-case-modal')
+      
+      if (isDraggableElement) {
+        // Prevent pull-to-refresh when touching draggable elements
+        if (e.type === 'touchstart') {
+          startY = e.touches[0].pageY
+        } else if (e.type === 'touchmove') {
+          const currentY = e.touches[0].pageY
+          const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+          
+          // If we're at the top of the page and trying to scroll down, prevent it
+          if (scrollTop === 0 && currentY > startY) {
+            e.preventDefault()
+          }
+        }
+      }
+    }
+    
+    // Add listeners with passive: false to allow preventDefault
+    document.addEventListener('touchstart', preventPullToRefresh, { passive: false })
+    document.addEventListener('touchmove', preventPullToRefresh, { passive: false })
+    
+    return () => {
+      document.removeEventListener('touchstart', preventPullToRefresh)
+      document.removeEventListener('touchmove', preventPullToRefresh)
+    }
+  }, [])
+
   // Watch for variant changes and update background/frame accordingly
   useEffect(() => {
     const rootElement = document.getElementById('phone-case-root')
@@ -2986,6 +3023,7 @@ function App() {
         <div className={`upload-section ${uploadDrawerOpen ? 'open' : ''}`}>
           {/* Header with close button (sticky on mobile) */}
           <div className="upload-section-header">
+            {/* Temporarily disabled - may need later
             <button 
               className="upload-drawer-close"
               onClick={() => setUploadDrawerOpen(false)}
@@ -2993,6 +3031,7 @@ function App() {
             >
               ✕
             </button>
+            */}
           </div>
           
           {/* Content area with white background */}
