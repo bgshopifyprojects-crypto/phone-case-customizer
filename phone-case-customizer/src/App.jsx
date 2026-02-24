@@ -84,29 +84,44 @@ function App() {
     }
   }, [themeColor])
 
-  // Prevent iOS pull-to-refresh when modal is open
+  // Prevent iOS pull-to-refresh when modal is open - AGGRESSIVE MODE
   useEffect(() => {
     let startY = 0
+    let isTouchingModal = false
     
     const preventPullToRefresh = (e) => {
       const target = e.target
-      // Check if we're interacting with a draggable element or the phone screen
-      const isDraggableElement = target.closest('.design-element') || 
-                                  target.closest('.phone-screen') ||
-                                  target.closest('.phone-case-modal')
       
-      if (isDraggableElement) {
-        // Prevent pull-to-refresh when touching draggable elements
+      // Check if we're inside the modal at all
+      const isInModal = target.closest('.phone-case-modal')
+      
+      if (isInModal) {
         if (e.type === 'touchstart') {
+          isTouchingModal = true
           startY = e.touches[0].pageY
-        } else if (e.type === 'touchmove') {
+        } else if (e.type === 'touchmove' && isTouchingModal) {
           const currentY = e.touches[0].pageY
-          const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+          const deltaY = currentY - startY
           
-          // If we're at the top of the page and trying to scroll down, prevent it
-          if (scrollTop === 0 && currentY > startY) {
+          // Get scroll position
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
+          
+          // ALWAYS prevent pull-to-refresh when:
+          // 1. We're at the top of the page (scrollTop === 0)
+          // 2. AND user is dragging downward (deltaY > 0)
+          // 3. OR we're touching draggable elements
+          const isDraggable = target.closest('.placed-image-wrapper') || 
+                             target.closest('.placed-text-wrapper') ||
+                             target.closest('.placed-image') ||
+                             target.closest('.placed-text') ||
+                             target.closest('.phone-screen')
+          
+          if ((scrollTop === 0 && deltaY > 0) || isDraggable) {
             e.preventDefault()
+            e.stopPropagation()
           }
+        } else if (e.type === 'touchend' || e.type === 'touchcancel') {
+          isTouchingModal = false
         }
       }
     }
@@ -114,10 +129,14 @@ function App() {
     // Add listeners with passive: false to allow preventDefault
     document.addEventListener('touchstart', preventPullToRefresh, { passive: false })
     document.addEventListener('touchmove', preventPullToRefresh, { passive: false })
+    document.addEventListener('touchend', preventPullToRefresh, { passive: false })
+    document.addEventListener('touchcancel', preventPullToRefresh, { passive: false })
     
     return () => {
       document.removeEventListener('touchstart', preventPullToRefresh)
       document.removeEventListener('touchmove', preventPullToRefresh)
+      document.removeEventListener('touchend', preventPullToRefresh)
+      document.removeEventListener('touchcancel', preventPullToRefresh)
     }
   }, [])
 
@@ -3023,15 +3042,14 @@ function App() {
         <div className={`upload-section ${uploadDrawerOpen ? 'open' : ''}`}>
           {/* Header with close button (sticky on mobile) */}
           <div className="upload-section-header">
-            {/* Temporarily disabled - may need later
             <button 
               className="upload-drawer-close"
               onClick={() => setUploadDrawerOpen(false)}
               aria-label="Close upload panel"
+              style={{ display: 'none' }}
             >
               ✕
             </button>
-            */}
           </div>
           
           {/* Content area with white background */}
