@@ -3932,7 +3932,7 @@
     transition: right 0.3s ease;
     box-shadow: -4px 0 12px rgba(0, 0, 0, 0.2);
     background: #f5f5f5;
-    padding-top: 60px; /* Add top padding to prevent content shift */
+    padding-top: 50px; /* Add top padding to prevent content shift */
   }
   
   .upload-section.open {
