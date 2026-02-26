@@ -83,7 +83,7 @@ def find_transparent_images(folder_path: str, threshold: float = 25.0) -> list[t
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Find images with significant transparent pixels (>25%% by default)'
+        description='Find images with significant transparent pixels (>5%% by default)'
     )
     parser.add_argument(
         'folder',
@@ -92,8 +92,8 @@ def main():
     parser.add_argument(
         '-t', '--threshold',
         type=float,
-        default=25.0,
-        help='Transparency threshold percentage (default: 25.0)'
+        default=5.0,
+        help='Transparency threshold percentage (default: 5.0)'
     )
     
     args = parser.parse_args()
