@@ -2,7 +2,7 @@
 
 client_id = "5074a2fccebe4fcdfa625aa668e6e172"
 name = "phone-case-customizer"
-application_url = "https://phone-case-customizer-vfql.onrender.com"
+application_url = "https://phone-case-customizer-sp.onrender.com"
 embedded = true
 
 [build]
@@ -33,13 +33,13 @@ scopes = "write_products,read_orders,write_orders,write_files,write_script_tags"
 [app_proxy]
 # App Proxy creates a permanent URL on the store domain
 # Example: https://yourstore.myshopify.com/apps/customizer
-url = "https://phone-case-customizer-vfql.onrender.com/apps/customizer"
+url = "https://phone-case-customizer-sp.onrender.com/apps/customizer"
 subpath = "customizer"
 prefix = "apps"
 
 [auth]
 redirect_urls = [
-  "https://phone-case-customizer-vfql.onrender.com/auth",
-  "https://phone-case-customizer-vfql.onrender.com/auth/callback",
-  "https://phone-case-customizer-vfql.onrender.com/api/auth"
+  "https://phone-case-customizer-sp.onrender.com/auth",
+  "https://phone-case-customizer-sp.onrender.com/auth/callback",
+  "https://phone-case-customizer-sp.onrender.com/api/auth"
 ]
