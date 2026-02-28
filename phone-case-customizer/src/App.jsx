@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
-import './App.css'
-import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import QRCode from 'qrcode'
+import { useEffect, useRef, useState } from 'react'
+import './App.css'
 
 function App() {
   // Get initial values from liquid template data attributes
@@ -3105,7 +3104,7 @@ function App() {
                 >
                   RESİM EKLE
                 </button>
-                <p className="upload-hint">Resim yüklemek için tıklayın veya sürükleyin</p>
+                <p className="upload-hint">Resim yüklemek için tıklayın veya sürükleyin.</p>
               </div>
 
               {/* Image Gallery */}

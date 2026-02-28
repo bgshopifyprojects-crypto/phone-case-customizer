@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { boundary } from "@shopify/shopify-app-react-router/server";
+import { useEffect, useState } from "react";
 import type {
   ActionFunctionArgs,
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { useLoaderData, useFetcher } from "react-router";
-import { authenticate } from "../shopify.server";
-import { boundary } from "@shopify/shopify-app-react-router/server";
+import { useFetcher, useLoaderData } from "react-router";
 import prisma from "../db.server";
+import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -331,7 +331,7 @@ export default function Index() {
       
       <s-section heading="Özelleştir Butonu Logosu">
         <s-paragraph>
-          Özelleştir butonunda görüntülenecek özel bir logo URL'si ekleyin. Logo sağlanmazsa, palet emojisi (🎨) gösterilecektir. Önerilen boyut: 24x24 piksel veya daha büyük.
+          Özelleştir butonunda görüntülenecek özel bir logo URL'si ekleyin. Logo sağlanmazsa, palet emojisi (🎨) gösterilecektir. Önerilen boyut: 24x24 piksel veya daha büyük olabilir.
         </s-paragraph>
         
         <s-stack direction="block" gap="base">

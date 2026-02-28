@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to find images with significant transparent pixels in a folder.
-Prints filenames where transparent pixels exceed 25% of total pixels.
+Prints filenames where transparent pixels exceed 4% of total pixels.
 """
 
 import argparse
@@ -45,7 +45,7 @@ def get_transparency_percentage(image_path: str) -> float | None:
     return (transparent_pixels / total_pixels) * 100
 
 
-def find_transparent_images(folder_path: str, threshold: float = 25.0) -> list[tuple[str, float]]:
+def find_transparent_images(folder_path: str, threshold: float = 4.0) -> list[tuple[str, float]]:
     """
     Find all images in folder with transparency above threshold.
     
@@ -83,7 +83,7 @@ def find_transparent_images(folder_path: str, threshold: float = 25.0) -> list[t
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Find images with significant transparent pixels (>5%% by default)'
+        description='Find images with significant transparent pixels (>4%% by default)'
     )
     parser.add_argument(
         'folder',
@@ -92,8 +92,8 @@ def main():
     parser.add_argument(
         '-t', '--threshold',
         type=float,
-        default=5.0,
-        help='Transparency threshold percentage (default: 5.0)'
+        default=4.0,
+        help='Transparency threshold percentage (default: 4.0)'
     )
     
     args = parser.parse_args()
