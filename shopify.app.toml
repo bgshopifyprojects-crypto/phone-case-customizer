@@ -12,30 +12,18 @@ automatically_update_urls_on_dev = true
 api_version = "2026-04"
 
   [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/scopes_update" ]
+  uri = "https://phone-case-customizer-sp.onrender.com/webhooks/app/scopes_update"
 
   [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
-
-  # Note: orders/create webhook requires app approval for protected customer data
-  # For testing, we'll manually check orders or use the Shopify admin API
-  # Uncomment when app is approved for production
-  # [[webhooks.subscriptions]]
-  # topics = [ "orders/create" ]
-  # uri = "/webhooks/orders/create"
+  topics = [ "app/uninstalled" ]
+  uri = "https://phone-case-customizer-sp.onrender.com/webhooks/app/uninstalled"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,read_orders,write_orders,write_files,write_script_tags"
-
-[app_proxy]
-# App Proxy creates a permanent URL on the store domain
-# Example: https://yourstore.myshopify.com/apps/customizer
-url = "https://phone-case-customizer-sp.onrender.com/apps/customizer"
-subpath = "customizer"
-prefix = "apps"
+scopes = "write_files,read_orders,write_orders,write_products,write_script_tags"
+optional_scopes = [ ]
+use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
@@ -43,3 +31,8 @@ redirect_urls = [
   "https://phone-case-customizer-sp.onrender.com/auth/callback",
   "https://phone-case-customizer-sp.onrender.com/api/auth"
 ]
+
+[app_proxy]
+url = "https://phone-case-customizer-sp.onrender.com/apps/customizer"
+subpath = "customizer"
+prefix = "apps"

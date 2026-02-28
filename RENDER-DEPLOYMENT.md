@@ -3,7 +3,7 @@
 ## ✅ Successfully Deployed!
 
 Your app is now live on Render at:
-**https://phone-case-customizer.onrender.com**
+**https://phone-case-customizer-sp.onrender.com**
 
 ---
 
@@ -20,7 +20,7 @@ Your app is now live on Render at:
 ```
 SHOPIFY_API_KEY=5074a2fccebe4fcdfa625aa668e6e172
 SHOPIFY_API_SECRET=shops_b71dd9217c1906dc5d602837ad7f5212
-SHOPIFY_APP_URL=https://phone-case-customizer.onrender.com
+SHOPIFY_APP_URL=https://phone-case-customizer-sp.onrender.com
 SCOPES=write_products,read_orders,write_orders,write_files
 NODE_ENV=production
 PORT=3000
@@ -37,24 +37,24 @@ Go to https://partners.shopify.com:
 1. Select your app
 2. Go to **"App setup"** → **"URLs"**
 3. Update:
-   - **App URL:** `https://phone-case-customizer.onrender.com`
+   - **App URL:** `https://phone-case-customizer-sp.onrender.com`
    - **Allowed redirection URLs:**
-     - `https://phone-case-customizer.onrender.com/auth`
-     - `https://phone-case-customizer.onrender.com/auth/callback`
-     - `https://phone-case-customizer.onrender.com/api/auth`
+     - `https://phone-case-customizer-sp.onrender.com/auth`
+     - `https://phone-case-customizer-sp.onrender.com/auth/callback`
+     - `https://phone-case-customizer-sp.onrender.com/api/auth`
 
 ### 2. Update shopify.app.toml
 
 Update your local `shopify.app.toml`:
 
 ```toml
-application_url = "https://phone-case-customizer.onrender.com"
+application_url = "https://phone-case-customizer-sp.onrender.com"
 
 [auth]
 redirect_urls = [
-  "https://phone-case-customizer.onrender.com/auth",
-  "https://phone-case-customizer.onrender.com/auth/callback",
-  "https://phone-case-customizer.onrender.com/api/auth"
+  "https://phone-case-customizer-sp.onrender.com/auth",
+  "https://phone-case-customizer-sp.onrender.com/auth/callback",
+  "https://phone-case-customizer-sp.onrender.com/api/auth"
 ]
 ```
 
@@ -289,7 +289,7 @@ Your code is safe on GitHub! ✅
 
 ## Summary
 
-✅ **Deployed:** https://phone-case-customizer.onrender.com
+✅ **Deployed:** https://phone-case-customizer-sp.onrender.com
 ✅ **Auto-deploy:** Enabled (pushes to GitHub)
 ✅ **Cost:** Free (with cold starts)
 ✅ **Upgrade:** $7/month for always-on
