@@ -16,9 +16,8 @@ except ImportError:
 
 IMAGES = [
     "phoneLayer/find-transparent-in-images/Apple_iPhone_17_Pro_Max_Kisiye_Ozel_Kilif_Tasarla_Seffaf_Silikon_Kilif-cerceve.webp",
-    "phoneLayer/find-transparent-in-images/Apple_iPhone_17_Pro_Max_Kisiye_Ozel_Kilif_Tasarla_Seffaf_Silikon_Kilif.webp",
-    "phoneLayer/find-transparent-in-images/MagnetButonRozet.webp",
     "phoneLayer/find-transparent-in-images/Magnet_Buton_Rozet_Cerceve (2).webp",
+    "phoneLayer/find-transparent-in-images/hatali-magnet-trasparent.png",
 ]
 
 SEP = "-" * 140

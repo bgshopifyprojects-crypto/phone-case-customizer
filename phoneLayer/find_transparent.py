@@ -1,83 +1,48 @@
 #!/usr/bin/env python3
 """
 Script to find images with significant transparent pixels in a folder.
-Prints filenames where the largest connected non-opaque region exceeds the
-threshold percentage of total pixels.
-
-Non-opaque is defined as alpha < 240, which captures:
-  - Fully transparent pixels (alpha == 0)
-  - Semi-transparent / anti-aliased border pixels (0 < alpha < 240)
-
-Using the largest connected component (rather than raw pixel count) avoids
-false positives from scattered noise pixels while correctly detecting frame
-images whose borders are rendered with semi-transparency.
+Prints filenames where transparent pixels exceed 4% of total pixels.
 """
 
 import argparse
 import os
 import sys
-from typing import Optional
 import cv2
 import numpy as np
 
 
 SUPPORTED_EXTENSIONS = {'.png', '.webp', '.tiff', '.tif', '.bmp', '.gif'}
 
-# Pixels with alpha below this value are considered "non-opaque"
-ALPHA_OPAQUE_THRESHOLD = 240
 
-
-def get_transparency_percentage(image_path: str) -> Optional[float]:
+def get_transparency_percentage(image_path: str) -> float | None:
     """
-    Calculate the percentage of the image covered by the largest connected
-    region of non-opaque pixels (alpha < ALPHA_OPAQUE_THRESHOLD).
-
-    Using the largest connected component prevents scattered noise pixels from
-    inflating the score while still detecting frame images that use
-    semi-transparency for their borders.
-
+    Calculate the percentage of transparent pixels in an image.
+    
     Args:
         image_path: Path to the image file
-
+        
     Returns:
-        Percentage (0-100) of total pixels in the largest connected non-opaque
-        region, or None if the image has no alpha channel.
+        Percentage of transparent pixels (0-100), or None if image has no alpha channel
     """
     # Read image with alpha channel (IMREAD_UNCHANGED preserves alpha)
     img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-
+    
     if img is None:
         print(f"Warning: Could not read image: {image_path}", file=sys.stderr)
         return None
-
+    
     # Check if image has alpha channel (4 channels: BGRA)
     if len(img.shape) < 3 or img.shape[2] != 4:
         return None  # No alpha channel
-
+    
     # Extract alpha channel
     alpha_channel = img[:, :, 3]
+    
+    # Count transparent pixels (alpha = 0)
     total_pixels = alpha_channel.size
-
-    # Build binary mask: 255 where pixel is non-opaque (alpha < threshold)
-    non_opaque_mask = np.where(alpha_channel < ALPHA_OPAQUE_THRESHOLD, 255, 0).astype(np.uint8)
-
-    # If no non-opaque pixels at all, return 0
-    if non_opaque_mask.max() == 0:
-        return 0.0
-
-    # Find connected components in the non-opaque mask
-    num_labels, _, stats, _ = cv2.connectedComponentsWithStats(non_opaque_mask, connectivity=8)
-
-    if num_labels <= 1:
-        # Only background label — no non-opaque regions found
-        return 0.0
-
-    # stats[label, cv2.CC_STAT_AREA] gives pixel count per component.
-    # Label 0 is background (opaque pixels); skip it.
-    component_areas = stats[1:, cv2.CC_STAT_AREA]  # exclude background label
-    largest_component_area = int(component_areas.max())
-
-    return (largest_component_area / total_pixels) * 100
+    transparent_pixels = np.sum(alpha_channel == 0)
+    
+    return (transparent_pixels / total_pixels) * 100
 
 
 def find_transparent_images(folder_path: str, threshold: float = 4.0) -> list[tuple[str, float]]:
