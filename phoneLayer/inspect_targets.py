@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.
 """Inspect target images for tests 0, 1, 2, 6 to understand why bbox detection fails."""
 
 import cv2
