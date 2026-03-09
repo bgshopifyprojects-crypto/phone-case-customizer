@@ -39,4 +39,8 @@ echo "--- Test 7 ---"
 python3 apply_phone_mask.py tests/tests_apply_mask7/refer.png tests/tests_apply_mask7/target.png
 echo ""
 
+echo "--- Test 8 ---"
+python3 apply_phone_mask.py tests/tests_apply_mask8/refer.png tests/tests_apply_mask8/target.png
+echo ""
+
 echo "=== All tests completed ==="

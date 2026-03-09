@@ -294,17 +294,21 @@ def scale_mask_to_bbox(mask: np.ndarray, src_bbox: BoundingBox,
                        dst_bbox: BoundingBox, dst_shape: tuple) -> np.ndarray:
     """
     Scale and position mask from source bbox to destination bbox.
-    
-    The output mask keeps the entire image opaque (255) except where the 
-    reference mask has transparency (e.g., camera cutouts). This preserves
-    the background of the target image.
-    
+
+    The output mask is fully transparent (0) everywhere except within the
+    destination phone bounding box, where the scaled reference mask is placed.
+    This ensures:
+      - Background outside the phone bbox → transparent (alpha=0)
+      - Printable back panel inside the phone bbox → opaque (alpha=255)
+      - Frame edges and camera cutouts inside the phone bbox → transparent (alpha=0)
+
     Args:
-        mask: Source alpha mask (full image size)
+        mask: Source alpha mask (full image size), with printable area=255 and
+              frame/cutouts=0 (already normalized by extract_alpha_mask).
         src_bbox: Bounding box of phone in source image
         dst_bbox: Bounding box of phone in destination image
         dst_shape: Shape of destination image (height, width)
-        
+
     Returns:
         Scaled mask matching destination image size
     """
@@ -315,11 +319,13 @@ def scale_mask_to_bbox(mask: np.ndarray, src_bbox: BoundingBox,
     dst_width = dst_bbox.width
     dst_height = dst_bbox.height
     
-    scaled_region = cv2.resize(src_mask_region, (dst_width, dst_height), 
+    scaled_region = cv2.resize(src_mask_region, (dst_width, dst_height),
                                interpolation=cv2.INTER_LINEAR)
     
-    # Create full-size output mask (fully opaque - keeps entire target image visible)
-    output_mask = np.full((dst_shape[0], dst_shape[1]), 255, dtype=np.uint8)
+    # Create full-size output mask starting fully transparent.
+    # Only the phone body region (dst_bbox) will be filled with the scaled mask.
+    # Pixels outside the phone bbox remain transparent (alpha=0).
+    output_mask = np.zeros((dst_shape[0], dst_shape[1]), dtype=np.uint8)
     
     # Place scaled region at destination bbox position
     # This applies transparency only where the reference mask has it (camera cutouts, etc.)
