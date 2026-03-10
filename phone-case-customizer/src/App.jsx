@@ -122,9 +122,30 @@ function App() {
     }
   }, [themeColor]);
 
-  // NOTE: Document-level touchmove/wheel blocking is handled unconditionally
-  // by the IIFE in phone-case-customizer.liquid (window.__setModalOpen).
-  // No redundant document listeners here — they would conflict.
+  // ─── MODAL-ELEMENT LEVEL SCROLL BLOCKER ────────────────────────────────────
+  // Attach non-passive touchmove + touchstart listeners directly to the modal
+  // DOM node. Element-level listeners fire BEFORE document-level ones, so
+  // preventDefault() is guaranteed to work even if the theme registered a
+  // passive document listener earlier. This is the last line of defense against
+  // iOS pull-to-refresh and background page scroll.
+  useEffect(() => {
+    const modal = document.getElementById("phone-case-modal");
+    if (!modal) return;
+
+    const blockTouch = (e) => {
+      e.preventDefault();
+    };
+
+    // passive: false is mandatory for preventDefault() to be honoured
+    modal.addEventListener("touchmove", blockTouch, { passive: false });
+    modal.addEventListener("touchstart", blockTouch, { passive: false });
+
+    return () => {
+      modal.removeEventListener("touchmove", blockTouch);
+      modal.removeEventListener("touchstart", blockTouch);
+    };
+  }, []);
+  // ────────────────────────────────────────────────────────────────────────────
 
   // Watch for variant changes and update background/frame accordingly
   useEffect(() => {
