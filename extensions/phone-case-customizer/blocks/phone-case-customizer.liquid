@@ -445,14 +445,34 @@
       }
     }
 
+    // Scroll-lock helpers — single source of truth for lock/unlock state.
+    // Uses position:fixed + top:-scrollY for cross-browser / iOS Safari support.
+    function lockScroll() {
+      const scrollY = window.scrollY;
+      document.body.dataset.scrollY = scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function unlockScroll() {
+      const scrollY = parseInt(document.body.dataset.scrollY || '0', 10);
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      delete document.body.dataset.scrollY;
+      window.scrollTo(0, scrollY);
+    }
+
     // Open modal
     btn.addEventListener('click', function () {
       console.log('Customize button clicked');
       ensureModalInBody();
       modal.style.visibility = 'visible';
       modal.style.opacity = '1';
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
+      lockScroll();
 
       // Mount React app on first open
       if (!reactMounted && window.React && window.ReactDOM) {
@@ -465,8 +485,7 @@
     function closeModal() {
       modal.style.visibility = 'hidden';
       modal.style.opacity = '0';
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
+      unlockScroll();
       // Unmount React app
       const root = document.getElementById('phone-case-root');
       if (root && window.ReactDOM) {
