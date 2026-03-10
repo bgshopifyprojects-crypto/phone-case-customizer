@@ -254,6 +254,12 @@
 -->
 
 <style>
+  /* iOS Safari pull-to-refresh root-level defense */
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
   .phone-case-customizer-wrapper {
     margin: 20px 0;
     position: relative;
@@ -320,9 +326,8 @@
     overflow-x: hidden;
     background: rgba(0, 0, 0, 0.95) !important;
     overscroll-behavior: contain;
-    /* touch-action: none prevents the browser from handling any touch gestures
-       on the modal backdrop natively — JS handles all touch interactions */
-    touch-action: none;
+    /* touch-action is NOT set here — the document-level touchmove blocker
+       (window.__setModalOpen) handles scroll prevention unconditionally */
   }
 
   /* The React app root and its scrollable inner containers need pan-y
@@ -362,6 +367,44 @@
     display: none !important;
   }
 </style>
+
+<script>
+  // ============================================================
+  // NUCLEAR SCROLL LOCK — registered synchronously, before any
+  // other code, so this listener takes priority over every passive
+  // listener that React or the theme may register later.
+  // passive: false is REQUIRED for preventDefault() to work.
+  // ============================================================
+  (function () {
+    var isModalOpen = false;
+
+    // Block ALL touchmove events when modal is open.
+    // Registered before DOMContentLoaded so it runs before React mounts.
+    document.addEventListener(
+      'touchmove',
+      function (e) {
+        if (!isModalOpen) return;
+        e.preventDefault();
+      },
+      { passive: false }
+    );
+
+    // Also block wheel events (desktop scroll wheel / trackpad)
+    document.addEventListener(
+      'wheel',
+      function (e) {
+        if (!isModalOpen) return;
+        e.preventDefault();
+      },
+      { passive: false }
+    );
+
+    // Expose flag setter globally so lockScroll / unlockScroll can toggle it
+    window.__setModalOpen = function (open) {
+      isModalOpen = open;
+    };
+  })();
+</script>
 
 <script>
   // Remove frame images and their parent containers from product page
@@ -466,46 +509,24 @@
 
     // Scroll-lock helpers — single source of truth for lock/unlock state.
     // Uses position:fixed + top:-scrollY for cross-browser / iOS Safari support.
-    // Also blocks touchmove bubbling to prevent background scroll and iOS pull-to-refresh.
-
-    // Document-level non-passive touchmove blocker.
-    // Registered ONCE at page load (before React mounts) so it takes priority over
-    // any passive listeners React may register later.
-    // Walks up from the touch target; if a scrollable child is found, lets it scroll naturally.
-    function documentTouchMoveBlocker(e) {
-      // Only block when modal is visible
-      if (modal.style.visibility !== 'visible') return;
-
-      let el = e.target;
-      while (el && el !== document.body) {
-        const style = window.getComputedStyle(el);
-        const overflowY = style.overflowY;
-        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
-          return; // allow scroll inside explicitly scrollable containers
-        }
-        el = el.parentElement;
-      }
-      e.preventDefault(); // block background scroll / pull-to-refresh
-    }
-
-    // Register at page load — must be before React mounts to take priority
-    document.addEventListener('touchmove', documentTouchMoveBlocker, { passive: false });
+    // The unconditional touchmove/wheel blocker is registered in the IIFE above
+    // (before this DOMContentLoaded block) and controlled via window.__setModalOpen.
 
     function lockScroll() {
-      const scrollY = window.scrollY;
+      window.__setModalOpen(true);
+      var scrollY = window.scrollY;
       document.body.dataset.scrollY = scrollY;
       document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
+      document.body.style.top = '-' + scrollY + 'px';
       document.body.style.width = '100%';
-      document.body.style.overflow = 'hidden';
     }
 
     function unlockScroll() {
-      const scrollY = parseInt(document.body.dataset.scrollY || '0', 10);
+      window.__setModalOpen(false);
+      var scrollY = parseInt(document.body.dataset.scrollY || '0', 10);
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.width = '';
-      document.body.style.overflow = '';
       delete document.body.dataset.scrollY;
       window.scrollTo(0, scrollY);
     }

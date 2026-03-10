@@ -122,60 +122,9 @@ function App() {
     }
   }, [themeColor]);
 
-  // Prevent background body scroll / iOS pull-to-refresh when modal is open.
-  // The document-level blocker in phone-case-customizer.liquid is the primary
-  // guard (registered before React mounts). This handler is a secondary layer
-  // that also blocks touchmove for any touch that started inside the modal,
-  // covering edge cases where the liquid blocker may not fire (e.g. cross-origin
-  // iframes or theme-injected passive listeners that run first).
-  useEffect(() => {
-    let isTouchingModal = false;
-
-    const onTouchStart = (e) => {
-      if (e.target.closest(".phone-case-modal")) {
-        isTouchingModal = true;
-      } else {
-        isTouchingModal = false;
-      }
-    };
-
-    const onTouchMove = (e) => {
-      if (!isTouchingModal) return;
-
-      // Allow scroll inside explicitly scrollable containers (sidebar panels, etc.)
-      let el = e.target;
-      while (el && el !== document.body) {
-        const style = window.getComputedStyle(el);
-        const overflowY = style.overflowY;
-        if (
-          (overflowY === "auto" || overflowY === "scroll") &&
-          el.scrollHeight > el.clientHeight
-        ) {
-          return; // let this container scroll naturally
-        }
-        el = el.parentElement;
-      }
-
-      e.preventDefault();
-    };
-
-    const onTouchEnd = () => {
-      isTouchingModal = false;
-    };
-
-    // passive: false is required to allow preventDefault()
-    document.addEventListener("touchstart", onTouchStart, { passive: false });
-    document.addEventListener("touchmove", onTouchMove, { passive: false });
-    document.addEventListener("touchend", onTouchEnd, { passive: false });
-    document.addEventListener("touchcancel", onTouchEnd, { passive: false });
-
-    return () => {
-      document.removeEventListener("touchstart", onTouchStart);
-      document.removeEventListener("touchmove", onTouchMove);
-      document.removeEventListener("touchend", onTouchEnd);
-      document.removeEventListener("touchcancel", onTouchEnd);
-    };
-  }, []);
+  // NOTE: Document-level touchmove/wheel blocking is handled unconditionally
+  // by the IIFE in phone-case-customizer.liquid (window.__setModalOpen).
+  // No redundant document listeners here — they would conflict.
 
   // Watch for variant changes and update background/frame accordingly
   useEffect(() => {
