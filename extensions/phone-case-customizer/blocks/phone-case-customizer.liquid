@@ -11,17 +11,6 @@
 
   <!-- Modal Container -->
   <div id="phone-case-modal" class="phone-case-modal" style="visibility:hidden;opacity:0;">
-    <!-- Prevent page zoom in modal -->
-    <style>
-      #phone-case-modal {
-        touch-action: pan-x pan-y !important;
-        -ms-touch-action: pan-x pan-y !important;
-      }
-      #phone-case-modal * {
-        touch-action: inherit !important;
-      }
-    </style>
-
     <!-- Close button is now created by React component for proper z-index stacking -->
 
     {% comment %}
@@ -331,11 +320,35 @@
     overflow-x: hidden;
     background: rgba(0, 0, 0, 0.95) !important;
     overscroll-behavior: contain;
+    /* touch-action: none prevents the browser from handling any touch gestures
+       on the modal backdrop natively — JS handles all touch interactions */
+    touch-action: none;
+  }
+
+  /* The React app root and its scrollable inner containers need pan-y
+     so that intentional vertical scrolling within the UI still works */
+  #phone-case-root {
+    touch-action: pan-y;
+  }
+
+  /* Explicitly scrollable containers inside the modal must allow pan-y */
+  #phone-case-root .upload-section,
+  #phone-case-root .upload-section-content,
+  #phone-case-root .assets-grid,
+  #phone-case-root .layers-list,
+  #phone-case-root .image-gallery,
+  #phone-case-root .text-edit-detail .detail-content {
+    touch-action: pan-y;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
 
-  #phone-case-root {
-    touch-action: pan-y;
+  /* The phone screen design area and all draggable elements must NOT allow
+     native touch scroll — JS drag handlers take full control here */
+  #phone-case-root .phone-screen,
+  #phone-case-root .phone-case,
+  #phone-case-root .phone-section {
+    touch-action: none;
   }
 
   /* Close button is now created by React component - no styles needed here */
@@ -455,19 +468,28 @@
     // Uses position:fixed + top:-scrollY for cross-browser / iOS Safari support.
     // Also blocks touchmove bubbling to prevent background scroll and iOS pull-to-refresh.
 
+    // Document-level non-passive touchmove blocker.
+    // Registered ONCE at page load (before React mounts) so it takes priority over
+    // any passive listeners React may register later.
     // Walks up from the touch target; if a scrollable child is found, lets it scroll naturally.
-    function handleModalTouchMove(e) {
+    function documentTouchMoveBlocker(e) {
+      // Only block when modal is visible
+      if (modal.style.visibility !== 'visible') return;
+
       let el = e.target;
-      while (el && el !== modal) {
+      while (el && el !== document.body) {
         const style = window.getComputedStyle(el);
         const overflowY = style.overflowY;
         if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
-          return; // allow scroll inside this element
+          return; // allow scroll inside explicitly scrollable containers
         }
         el = el.parentElement;
       }
       e.preventDefault(); // block background scroll / pull-to-refresh
     }
+
+    // Register at page load — must be before React mounts to take priority
+    document.addEventListener('touchmove', documentTouchMoveBlocker, { passive: false });
 
     function lockScroll() {
       const scrollY = window.scrollY;
@@ -476,7 +498,6 @@
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
-      modal.addEventListener('touchmove', handleModalTouchMove, { passive: false });
     }
 
     function unlockScroll() {
@@ -487,7 +508,6 @@
       document.body.style.overflow = '';
       delete document.body.dataset.scrollY;
       window.scrollTo(0, scrollY);
-      modal.removeEventListener('touchmove', handleModalTouchMove);
     }
 
     // Open modal
