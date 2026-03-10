@@ -10,8 +10,6 @@ The script:
 4. Saves the result with '_layer.png' suffix and a debug visualization
 """
 
-from __future__ import annotations
-
 import argparse
 import os
 import sys
@@ -130,110 +128,19 @@ def find_edge_position_majority(mask: np.ndarray, axis: str, side: str,
     return int(np.percentile(positions, percentile))
 
 
-def _build_mask_from_canny(image: np.ndarray) -> np.ndarray:
-    """
-    Build a filled foreground mask using Canny edge detection.
-    
-    Finds the largest contour (the phone outline) and fills it to create a
-    solid mask. This handles cases where the phone body color is too close to
-    the background for BGR color comparison to work reliably (e.g., white
-    iPhone on white background).
-    
-    Args:
-        image: Input BGR image
-        
-    Returns:
-        Binary mask (255 for foreground, 0 for background)
-    """
-    gray = cv2.cvtColor(image[:, :, :3], cv2.COLOR_BGR2GRAY)
-    # Blur to reduce noise before edge detection
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = cv2.Canny(blurred, 10, 50)
-    
-    # Dilate edges to close small gaps in the phone outline
-    kernel = np.ones((7, 7), np.uint8)
-    edges_dilated = cv2.dilate(edges, kernel, iterations=2)
-    
-    # Find contours and keep the largest one (the phone body)
-    contours, _ = cv2.findContours(edges_dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
-    mask = np.zeros(gray.shape, dtype=np.uint8)
-    if contours:
-        largest = max(contours, key=cv2.contourArea)
-        cv2.drawContours(mask, [largest], -1, 255, thickness=cv2.FILLED)
-    
-    return mask
-
-
 def detect_phone_bbox(image: np.ndarray, tolerance: int = 30) -> BoundingBox:
     """
     Detect phone bounding box using majority voting for edges.
-
-    Strategy by image type:
-    - BGRA images with normal alpha (phone opaque, background transparent):
-      use alpha channel directly (alpha > 0 = foreground).
-    - BGRA images with inverted alpha (background opaque, phone transparent,
-      e.g. frame-only reference images): use Canny edge detection on the BGR
-      channels to find the full phone body boundary (frame + printable area).
-      Using alpha_inv > 0 here would only detect the printable area (the
-      transparent region), which is smaller than the full phone body. This
-      causes a bbox mismatch with the target image where the full phone body
-      is detected, leading to incorrect mask scaling.
-    - BGR images: try BGR color difference first; if the result covers less
-      than 30% of the image area (indicating the phone blends into the
-      background, e.g. white iPhone on white background), fall back to
-      Canny edge detection to find the phone outline.
-
+    
     Args:
         image: Input image (BGR or BGRA)
-        tolerance: Color tolerance for background detection (BGR images only)
-
+        tolerance: Color tolerance for background detection
+        
     Returns:
         BoundingBox of the phone
     """
-    h, w = image.shape[:2]
-
-    if len(image.shape) == 3 and image.shape[2] == 4:
-        alpha = image[:, :, 3]
-        corner_avg = (int(alpha[0, 0]) + int(alpha[0, w - 1]) +
-                      int(alpha[h - 1, 0]) + int(alpha[h - 1, w - 1])) / 4
-        center_val = int(alpha[h // 2, w // 2])
-        if corner_avg > 200 and center_val < 55:
-            # Inverted alpha: background/frame are opaque (255), printable area
-            # is transparent (0). alpha_inv > 0 would only capture the printable
-            # area, not the full phone body. Use Canny on BGR channels instead so
-            # the bbox covers the entire phone outline (frame + printable area),
-            # consistent with how the target image bbox is detected.
-            print("  [bbox] Inverted alpha detected — using Canny for full phone body boundary")
-            mask = _build_mask_from_canny(image)
-        else:
-            # Normal alpha: phone body is opaque, background is transparent.
-            alpha_mask = (alpha > 0).astype(np.uint8) * 255
-            alpha_fg_ratio = np.sum(alpha_mask > 0) / (h * w)
-            if alpha_fg_ratio >= 0.99:
-                # Alpha channel is saturated (nearly all pixels opaque) — it
-                # carries no useful segmentation information (e.g. a BGRA image
-                # saved with alpha=255 everywhere). Fall back to BGR color
-                # difference so the phone body is detected correctly.
-                print("  [bbox] Alpha saturated (fg_ratio={:.2f}), falling back to BGR detection".format(alpha_fg_ratio))
-                bg_color = get_background_color(image)
-                mask = create_foreground_mask(image, bg_color, tolerance)
-                bgr_fg_ratio = np.sum(mask > 0) / (h * w)
-                if bgr_fg_ratio < 0.30:
-                    print("  [bbox] BGR mask too sparse (fg_ratio={:.2f}), using Canny fallback".format(bgr_fg_ratio))
-                    mask = _build_mask_from_canny(image)
-            else:
-                mask = alpha_mask
-    else:
-        bg_color = get_background_color(image)
-        mask = create_foreground_mask(image, bg_color, tolerance)
-
-        # Sanity check: if the BGR mask covers less than 30% of the image,
-        # the phone likely blends into the background. Fall back to Canny.
-        fg_ratio = np.sum(mask > 0) / (h * w)
-        if fg_ratio < 0.30:
-            print("  [bbox] BGR mask too sparse (fg_ratio={:.2f}), using Canny fallback".format(fg_ratio))
-            mask = _build_mask_from_canny(image)
+    bg_color = get_background_color(image)
+    mask = create_foreground_mask(image, bg_color, tolerance)
     
     # Apply morphological operations to clean up the mask
     kernel = np.ones((5, 5), np.uint8)
@@ -251,64 +158,34 @@ def detect_phone_bbox(image: np.ndarray, tolerance: int = 30) -> BoundingBox:
 
 def extract_alpha_mask(image: np.ndarray) -> np.ndarray | None:
     """
-    Extract alpha channel from image, normalizing orientation if needed.
-
-    Some reference images have an inverted alpha channel where the phone
-    silhouette is transparent (alpha=0) and the background is opaque
-    (alpha=255) — the opposite of the expected convention. This happens
-    with frame-only reference images (e.g. a white phone on white background
-    where the interior is cut out). Detect this case by comparing corner
-    alpha values against the center alpha value and invert if necessary so
-    the phone silhouette is always opaque (alpha=255) and the background is
-    always transparent (alpha=0).
-
+    Extract alpha channel from image.
+    
     Args:
         image: Input image (should be BGRA)
-
+        
     Returns:
-        Alpha channel as grayscale image with phone silhouette opaque,
-        or None if no alpha channel present
+        Alpha channel as grayscale image, or None if no alpha
     """
     if len(image.shape) < 3 or image.shape[2] != 4:
         return None
-
-    alpha = image[:, :, 3].copy()
-    h, w = alpha.shape
-
-    # Sample the four corners and the center to determine orientation.
-    corner_alpha_avg = (
-        int(alpha[0, 0]) + int(alpha[0, w - 1]) +
-        int(alpha[h - 1, 0]) + int(alpha[h - 1, w - 1])
-    ) / 4
-    center_alpha = int(alpha[h // 2, w // 2])
-
-    # Inverted: background corners are opaque, phone center is transparent.
-    if corner_alpha_avg > 200 and center_alpha < 55:
-        print("  [mask] Alpha channel is inverted (background opaque, phone transparent) — inverting")
-        alpha = 255 - alpha
-
-    return alpha
+    return image[:, :, 3].copy()
 
 
 def scale_mask_to_bbox(mask: np.ndarray, src_bbox: BoundingBox, 
                        dst_bbox: BoundingBox, dst_shape: tuple) -> np.ndarray:
     """
     Scale and position mask from source bbox to destination bbox.
-
-    The output mask is fully transparent (0) everywhere except within the
-    destination phone bounding box, where the scaled reference mask is placed.
-    This ensures:
-      - Background outside the phone bbox → transparent (alpha=0)
-      - Printable back panel inside the phone bbox → opaque (alpha=255)
-      - Frame edges and camera cutouts inside the phone bbox → transparent (alpha=0)
-
+    
+    The output mask keeps the entire image opaque (255) except where the 
+    reference mask has transparency (e.g., camera cutouts). This preserves
+    the background of the target image.
+    
     Args:
-        mask: Source alpha mask (full image size), with printable area=255 and
-              frame/cutouts=0 (already normalized by extract_alpha_mask).
+        mask: Source alpha mask (full image size)
         src_bbox: Bounding box of phone in source image
         dst_bbox: Bounding box of phone in destination image
         dst_shape: Shape of destination image (height, width)
-
+        
     Returns:
         Scaled mask matching destination image size
     """
@@ -319,13 +196,11 @@ def scale_mask_to_bbox(mask: np.ndarray, src_bbox: BoundingBox,
     dst_width = dst_bbox.width
     dst_height = dst_bbox.height
     
-    scaled_region = cv2.resize(src_mask_region, (dst_width, dst_height),
+    scaled_region = cv2.resize(src_mask_region, (dst_width, dst_height), 
                                interpolation=cv2.INTER_LINEAR)
     
-    # Create full-size output mask starting fully transparent.
-    # Only the phone body region (dst_bbox) will be filled with the scaled mask.
-    # Pixels outside the phone bbox remain transparent (alpha=0).
-    output_mask = np.zeros((dst_shape[0], dst_shape[1]), dtype=np.uint8)
+    # Create full-size output mask (fully opaque - keeps entire target image visible)
+    output_mask = np.full((dst_shape[0], dst_shape[1]), 255, dtype=np.uint8)
     
     # Place scaled region at destination bbox position
     # This applies transparency only where the reference mask has it (camera cutouts, etc.)

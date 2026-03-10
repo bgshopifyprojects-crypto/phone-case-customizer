@@ -4,12 +4,9 @@ Script to find images with significant transparent pixels in a folder.
 Prints filenames where transparent pixels exceed 25% of total pixels.
 """
 
-from __future__ import annotations
-
 import argparse
 import os
 import sys
-from typing import Optional
 import cv2
 import numpy as np
 
@@ -17,7 +14,7 @@ import numpy as np
 SUPPORTED_EXTENSIONS = {'.png', '.webp', '.tiff', '.tif', '.bmp', '.gif'}
 
 
-def get_transparency_percentage(image_path: str) -> Optional[float]:
+def get_transparency_percentage(image_path: str) -> float | None:
     """
     Calculate the percentage of transparent pixels in an image.
     
@@ -48,7 +45,7 @@ def get_transparency_percentage(image_path: str) -> Optional[float]:
     return (transparent_pixels / total_pixels) * 100
 
 
-def find_transparent_images(folder_path: str, threshold: float = 25.0) -> list:
+def find_transparent_images(folder_path: str, threshold: float = 25.0) -> list[tuple[str, float]]:
     """
     Find all images in folder with transparency above threshold.
     
