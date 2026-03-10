@@ -330,6 +330,12 @@
     padding: 0;
     overflow-x: hidden;
     background: rgba(0, 0, 0, 0.95) !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #phone-case-root {
+    touch-action: pan-y;
   }
 
   /* Close button is now created by React component - no styles needed here */
@@ -447,6 +453,22 @@
 
     // Scroll-lock helpers — single source of truth for lock/unlock state.
     // Uses position:fixed + top:-scrollY for cross-browser / iOS Safari support.
+    // Also blocks touchmove bubbling to prevent background scroll and iOS pull-to-refresh.
+
+    // Walks up from the touch target; if a scrollable child is found, lets it scroll naturally.
+    function handleModalTouchMove(e) {
+      let el = e.target;
+      while (el && el !== modal) {
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+          return; // allow scroll inside this element
+        }
+        el = el.parentElement;
+      }
+      e.preventDefault(); // block background scroll / pull-to-refresh
+    }
+
     function lockScroll() {
       const scrollY = window.scrollY;
       document.body.dataset.scrollY = scrollY;
@@ -454,6 +476,7 @@
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
+      modal.addEventListener('touchmove', handleModalTouchMove, { passive: false });
     }
 
     function unlockScroll() {
@@ -464,6 +487,7 @@
       document.body.style.overflow = '';
       delete document.body.dataset.scrollY;
       window.scrollTo(0, scrollY);
+      modal.removeEventListener('touchmove', handleModalTouchMove);
     }
 
     // Open modal
