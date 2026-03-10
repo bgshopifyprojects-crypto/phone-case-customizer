@@ -20,11 +20,11 @@
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 
-  /* touch-action: none on the modal backdrop — the browser must not handle any
-     touch gestures natively here. JS drag/pinch handlers take full control.
-     Scrollable inner panels override this with touch-action: pan-y below. */
-  touch-action: none;
-  -ms-touch-action: none;
+  /* touch-action is NOT set here — the document-level touchmove/wheel blocker
+     (window.__setModalOpen in phone-case-customizer.liquid) handles scroll
+     prevention unconditionally when the modal is open. Draggable elements
+     (.phone-screen, .placed-image-wrapper, etc.) still set touch-action: none
+     individually below. */
 
   /* CSS Custom Properties for Responsive Design */
 
