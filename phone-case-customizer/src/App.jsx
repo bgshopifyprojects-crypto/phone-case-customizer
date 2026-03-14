@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
-function App() {
+function CustomizerContent() {
   // Get initial values from liquid template data attributes
   const rootElement = document.getElementById("phone-case-root");
   const initialPhoneCaseUrl = rootElement?.dataset?.phoneCaseUrl || ""; // No fallback - blank if not provided
@@ -7434,6 +7434,123 @@ function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── App (iframe host) ────────────────────────────────────────────────────────
+// Reads data-* attributes from #phone-case-root, builds the embed URL, and
+// renders an <iframe> that hosts CustomizerContent via /apps/customizer/embed.
+// Variant changes are forwarded to the iframe via postMessage.
+function App() {
+  const iframeRef = useRef(null);
+
+  // Build the embed src once on mount (initial values from data attributes)
+  const [iframeSrc] = useState(() => {
+    const root = document.getElementById("phone-case-root");
+    const d = root?.dataset || {};
+
+    const params = new URLSearchParams();
+    if (d.phoneCaseUrl) params.set("phoneCaseUrl", d.phoneCaseUrl);
+    if (d.productImageUrl) params.set("productImageUrl", d.productImageUrl);
+    if (d.productImageUrls) params.set("productImageUrls", d.productImageUrls);
+    if (d.variantId) params.set("variantId", d.variantId);
+    if (d.designsUrl) params.set("designsUrl", d.designsUrl);
+    if (d.themeColor) params.set("themeColor", d.themeColor);
+    if (d.productPrice) params.set("productPrice", d.productPrice);
+    if (d.productComparePrice)
+      params.set("productComparePrice", d.productComparePrice);
+    if (d.customFrameUrl) params.set("customFrameUrl", d.customFrameUrl);
+    if (d.hasCustomFrame) params.set("hasCustomFrame", d.hasCustomFrame);
+
+    return `/apps/customizer/embed?${params.toString()}`;
+  });
+
+  // Forward variant changes (MutationObserver + Shopify events) to the iframe
+  useEffect(() => {
+    const root = document.getElementById("phone-case-root");
+    if (!root) return;
+
+    const sendVariantChange = (detail) => {
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: "customizer:variantChanged", detail },
+        "*",
+      );
+    };
+
+    // MutationObserver: watch data-* attribute changes on #phone-case-root
+    const observer = new MutationObserver(() => {
+      sendVariantChange({
+        variantId: root.dataset.variantId,
+        backgroundUrl: root.dataset.phoneCaseUrl,
+        productImageUrl: root.dataset.productImageUrl,
+      });
+    });
+
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: [
+        "data-variant-id",
+        "data-phone-case-url",
+        "data-product-image-url",
+      ],
+    });
+
+    // Shopify theme variant change events
+    const handleVariantChange = () => {
+      setTimeout(() => {
+        sendVariantChange({
+          variantId: root.dataset.variantId,
+          backgroundUrl: root.dataset.phoneCaseUrl,
+          productImageUrl: root.dataset.productImageUrl,
+        });
+      }, 100);
+    };
+
+    document.addEventListener("variant:change", handleVariantChange);
+    document.addEventListener("variantChange", handleVariantChange);
+
+    // Our own custom event (dispatched by the Liquid block JS)
+    const handleCustomizerVariantChange = (e) => {
+      if (e.detail) sendVariantChange(e.detail);
+    };
+
+    window.addEventListener(
+      "customizer:variantChanged",
+      handleCustomizerVariantChange,
+    );
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("variant:change", handleVariantChange);
+      document.removeEventListener("variantChange", handleVariantChange);
+      window.removeEventListener(
+        "customizer:variantChanged",
+        handleCustomizerVariantChange,
+      );
+    };
+  }, []);
+
+  // Detect iframe mode: the embed route sets data-iframe-mode="true" on #phone-case-root
+  const rootElement = document.getElementById("phone-case-root");
+  const isIframeMode = rootElement?.dataset?.iframeMode === "true";
+
+  if (isIframeMode) {
+    return <CustomizerContent />;
+  }
+
+  return (
+    <iframe
+      ref={iframeRef}
+      src={iframeSrc}
+      style={{
+        width: "100%",
+        height: "100%",
+        border: "none",
+        display: "block",
+      }}
+      allow="clipboard-write"
+      title="Phone Case Customizer"
+    />
   );
 }
 
