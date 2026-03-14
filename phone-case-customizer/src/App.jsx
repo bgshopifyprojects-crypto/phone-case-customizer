@@ -3012,7 +3012,7 @@ function CustomizerContent() {
       setShowPreviewModal(true);
     } catch (error) {
       console.error("Preview error:", error);
-      alert("Önizleme oluşturulurken bir hata oluştu!");
+      alert("Önizleme oluşturulurken bir hata oluştu!.");
     } finally {
       setIsCapturing(false); // Hide loading overlay
     }
