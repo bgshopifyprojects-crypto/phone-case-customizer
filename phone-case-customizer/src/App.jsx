@@ -3019,7 +3019,7 @@ function App() {
   };
 
   return (
-    <div className="phone-case-modal">
+    <div className="phone-case-modal test-1">
       {/* Loading Overlay */}
       {isCapturing && (
         <div className="capture-overlay">
