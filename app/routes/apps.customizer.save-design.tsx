@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs } from "react-router";
 import prisma from "../db.server";
-import { sessionStorage, unauthenticated } from "../shopify.server";
+import { authenticate, sessionStorage } from "../shopify.server";
 import { type DesignData } from "../utils/image-generator";
 
 /**
@@ -265,12 +265,12 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    // Authenticate to get admin API access.
-    // authenticate.public.appProxy() does not provide an admin GraphQL client,
-    // so we use unauthenticated.admin(shop) to obtain one for app proxy routes.
+    // Authenticate to get admin API access
+    // For app proxy, we need to authenticate using the shop domain
     let admin;
     try {
-      ({ admin } = await unauthenticated.admin(shopDomain));
+      const authResult = await authenticate.public.appProxy(request);
+      admin = authResult.admin;
     } catch (error) {
       console.error("Authentication failed:", error);
 
