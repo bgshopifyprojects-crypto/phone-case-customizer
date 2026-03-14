@@ -1,265 +1,83 @@
-<!-- Phone Case Customizer Block - Using App Proxy -->
-<!-- No need to set SHOPIFY_APP_URL anymore! App Proxy handles routing -->
+<!-- Phone Case Customizer Block - iframe edition -->
+<!--
+  The customizer opens inside a full-screen <iframe> instead of a modal div.
+
+  Benefits over the old modal approach:
+  - The iframe has its own isolated document, so:
+      html, body { overscroll-behavior: none; touch-action: none }
+    works correctly — the iframe's body IS the scroll container.
+    No Shopify theme interference, no passive-listener problem.
+  - Pull-down-to-refresh is prevented at the iframe document level.
+  - The React app and all its assets are isolated from the theme's JS/CSS.
+
+  Communication: iframe ↔ parent via postMessage.
+    iframe → parent : { type: 'customizer:addToCart', detail: {...} }
+    iframe → parent : { type: 'customizer:close' }
+    parent → iframe : { type: 'customizer:variantChanged', detail: {...} }
+-->
+
+{% comment %} ── Variant data ─────────────────────────────────────────────── {% endcomment %}
+{% if product.selected_or_first_available_variant.featured_image %}
+  {% assign background_url = product.selected_or_first_available_variant.featured_image | image_url: width: 600 %}
+  {% assign product_image_url = product.selected_or_first_available_variant.featured_image | image_url: width: 600 %}
+{% elsif product.images.size > 0 %}
+  {% assign background_url = product.images[0] | image_url: width: 600 %}
+  {% assign product_image_url = product.images[0] | image_url: width: 600 %}
+{% else %}
+  {% assign background_url = 'phone-case.png' | asset_url %}
+  {% assign product_image_url = '' %}
+{% endif %}
+
+{% comment %} ── Frame URL ────────────────────────────────────────────────── {% endcomment %}
+{% assign custom_frame_url = '' %}
+{% assign has_custom_frame = false %}
+{% for image in product.images %}
+  {% assign alt_lower = image.alt | downcase %}
+  {% if alt_lower == 'frame' %}
+    {% assign custom_frame_url = image | image_url: width: 600 %}
+    {% assign has_custom_frame = true %}
+    {% break %}
+  {% endif %}
+{% endfor %}
+
+{% comment %} ── All product image URLs (comma-separated) ──────────────────── {% endcomment %}
+{% assign product_image_urls = '' %}
+{% for image in product.images %}
+  {% assign image_url = image | image_url: width: 600 %}
+  {% if forloop.first %}
+    {% assign product_image_urls = image_url %}
+  {% else %}
+    {% assign product_image_urls = product_image_urls | append: ',' | append: image_url %}
+  {% endif %}
+{% endfor %}
 
 <div class="phone-case-customizer-wrapper">
-  <!-- Trigger Button - Only show if product has the tag -->
   {% if product.tags contains 'dsn-editable-true' %}
     <button id="customize-phone-case-btn" class="customize-btn">
       <span id="button-icon">🎨</span> <span id="button-text">{{ block.settings.button_text }}</span>
     </button>
   {% endif %}
 
-  <!-- Modal Container -->
-  <div id="phone-case-modal" class="phone-case-modal" style="visibility:hidden;opacity:0;">
-    <!-- Close button is now created by React component for proper z-index stacking -->
-
-    {% comment %}
-      Use variant-specific image for background
-      - If variant has featured_image, use it
-      - Otherwise fall back to first product image
-    {% endcomment %}
-
-    {% if product.selected_or_first_available_variant.featured_image %}
-      {% assign background_url = product.selected_or_first_available_variant.featured_image | image_url: width: 600 %}
-      {% assign product_image_url = product.selected_or_first_available_variant.featured_image
-        | image_url: width: 600
-      %}
-    {% elsif product.images.size > 0 %}
-      {% assign background_url = product.images[0] | image_url: width: 600 %}
-      {% assign product_image_url = product.images[0] | image_url: width: 600 %}
-    {% else %}
-      {% assign background_url = 'phone-case.png' | asset_url %}
-      {% assign product_image_url = '' %}
-    {% endif %}
-
-    {% comment %}
-      Frame URL logic:
-      - Look for an image with alt text = "frame" (regardless of variant count)
-      - If found, use that as a custom frame layer (in addition to auto-generated frame)
-      - Auto-generated frame will always be created from product image
-    {% endcomment %}
-    {% assign custom_frame_url = '' %}
-    {% assign has_custom_frame = false %}
-
-    {% for image in product.images %}
-      {% assign alt_lower = image.alt | downcase %}
-      {% if alt_lower == 'frame' %}
-        {% assign custom_frame_url = image | image_url: width: 600 %}
-        {% assign has_custom_frame = true %}
-        {% break %}
-      {% endif %}
-    {% endfor %}
-
-    {% comment %} Collect all product image URLs for Python frame detection {% endcomment %}
-    {% assign product_image_urls = '' %}
-    {% for image in product.images %}
-      {% assign image_url = image | image_url: width: 600 %}
-      {% if forloop.first %}
-        {% assign product_image_urls = image_url %}
-      {% else %}
-        {% assign product_image_urls = product_image_urls | append: ',' | append: image_url %}
-      {% endif %}
-    {% endfor %}
-
-    <div
-      id="phone-case-root"
-      data-custom-frame-url="{{ custom_frame_url }}"
-      data-has-custom-frame="{{ has_custom_frame }}"
-      data-phone-case-url="{{ background_url }}"
-      data-product-image-url="{{ product_image_url }}"
-      data-product-image-urls="{{ product_image_urls }}"
-      data-variant-id="{{ product.selected_or_first_available_variant.id }}"
-      data-designs-url="{{ 'pre-design-images.json' | asset_url }}"
-      data-theme-color="{{ block.settings.theme_color }}"
-      data-product-price="{{ product.selected_or_first_available_variant.price | money }}"
-      data-product-compare-price="{{ product.selected_or_first_available_variant.compare_at_price | money }}"
-    ></div>
+  <!--
+    iframe overlay — hidden until the button is clicked.
+    position:fixed + 100vw/100vh covers the entire viewport.
+    The iframe src is set lazily on first open (avoids loading the app on page load).
+  -->
+  <div
+    id="phone-case-iframe-overlay"
+    style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:2147483647; background:#000;"
+  >
+    <iframe
+      id="phone-case-iframe"
+      src="about:blank"
+      style="width:100%; height:100%; border:none; display:block;"
+      allow="camera; microphone; clipboard-write"
+      title="Phone Case Customizer"
+    ></iframe>
   </div>
 </div>
 
-<script>
-  // Debug: Log product information
-  console.log('=== PRODUCT DEBUG INFO ===');
-  console.log('Product object:', {{ product | json }});
-  console.log('Product title:', '{{ product.title }}');
-  console.log('Product images count:', {{ product.images.size }});
-  console.log('Product images:', [
-    {% for image in product.images %}
-      {
-        src: '{{ image.src }}',
-        alt: '{{ image.alt }}',
-        width: {{ image.width }},
-        height: {{ image.height }},
-        position: {{ forloop.index }}
-      }{% unless forloop.last %},{% endunless %}
-    {% endfor %}
-  ]);
-  console.log('Selected variant:', {
-    id: '{{ product.selected_or_first_available_variant.id }}',
-    title: '{{ product.selected_or_first_available_variant.title }}',
-    featured_image: '{{ product.selected_or_first_available_variant.featured_image.src }}',
-    price: '{{ product.selected_or_first_available_variant.price | money }}'
-  });
-  console.log('Product metafields:', {
-    phone_model: '{{ product.metafields.custom.phone_model }}',
-    phone_case_frame: '{{ product.metafields.custom.phone_case_frame }}',
-    phone_case_background: '{{ product.metafields.custom.phone_case_background }}'
-  });
-  console.log('Product tags:', {{ product.tags | json }});
-  console.log('=========================');
-  console.log('Data attributes set:');
-  console.log('  background_url:', '{{ background_url }}');
-  console.log('  custom_frame_url:', '{{ custom_frame_url }}');
-  console.log('  has_custom_frame:', {{ has_custom_frame }});
-  console.log('  variants_count:', {{ product.variants.size }});
-  console.log('=========================');
-
-  // Listen for Shopify variant change events and update data attributes
-  (function() {
-    const rootElement = document.getElementById('phone-case-root');
-    if (!rootElement) return;
-
-    // Store product variants data for quick lookup
-    const variantsData = {
-      {% for variant in product.variants %}
-        '{{ variant.id }}': {
-          id: '{{ variant.id }}',
-          title: '{{ variant.title }}',
-          {% if variant.featured_image %}
-            backgroundUrl: '{{ variant.featured_image | image_url: width: 600 }}',
-            productImageUrl: '{{ variant.featured_image | image_url: width: 600 }}'
-          {% elsif product.images.size > 0 %}
-            backgroundUrl: '{{ product.images[0] | image_url: width: 600 }}',
-            productImageUrl: '{{ product.images[0] | image_url: width: 600 }}'
-          {% else %}
-            backgroundUrl: '{{ 'phone-case.png' | asset_url }}',
-            productImageUrl: ''
-          {% endif %}
-        }{% unless forloop.last %},{% endunless %}
-      {% endfor %}
-    };
-
-    console.log('Variants data loaded:', variantsData);
-
-    // Function to update data attributes when variant changes
-    function updateDataAttributes(variantId) {
-      const variantData = variantsData[variantId];
-      if (variantData) {
-        console.log('Updating data attributes for variant:', variantId, variantData);
-        rootElement.setAttribute('data-variant-id', variantData.id);
-        rootElement.setAttribute('data-phone-case-url', variantData.backgroundUrl);
-        rootElement.setAttribute('data-product-image-url', variantData.productImageUrl);
-
-        // Dispatch custom event to notify React app about variant change
-        window.dispatchEvent(new CustomEvent('customizer:variantChanged', {
-          detail: {
-            variantId: variantData.id,
-            backgroundUrl: variantData.backgroundUrl,
-            productImageUrl: variantData.productImageUrl
-          }
-        }));
-      }
-    }
-
-    // Listen for various variant change events
-    document.addEventListener('variant:change', function(event) {
-      console.log('variant:change event:', event);
-      if (event.detail && event.detail.variant && event.detail.variant.id) {
-        updateDataAttributes(event.detail.variant.id.toString());
-      }
-    });
-
-    // Also listen for form changes (variant selector)
-    const variantSelectors = document.querySelectorAll('select[name="id"], input[name="id"]');
-    variantSelectors.forEach(selector => {
-      selector.addEventListener('change', function(e) {
-        console.log('Variant selector changed:', e.target.value);
-        updateDataAttributes(e.target.value);
-      });
-    });
-
-    // Listen for radio button changes (common in modern themes)
-    const variantRadios = document.querySelectorAll('input[type="radio"][name*="option"]');
-    variantRadios.forEach(radio => {
-      radio.addEventListener('change', function() {
-        // Find the selected variant based on all option selections
-        setTimeout(() => {
-          const selectedVariantInput = document.querySelector('input[name="id"]:checked, select[name="id"]');
-          if (selectedVariantInput) {
-            const variantId = selectedVariantInput.value || selectedVariantInput.options[selectedVariantInput.selectedIndex].value;
-            console.log('Variant selected via options:', variantId);
-            updateDataAttributes(variantId);
-          }
-        }, 50);
-      });
-    });
-  })();
-</script>
-
-<script>
-  // Fetch admin theme color settings and override block setting
-  (function () {
-    const rootElement = document.getElementById('phone-case-root');
-    const customizeBtn = document.getElementById('customize-phone-case-btn');
-    const buttonIcon = document.getElementById('button-icon');
-    const buttonText = document.getElementById('button-text');
-    const settingsUrl = window.location.origin + '/apps/customizer/get-settings';
-
-    fetch(settingsUrl)
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.themeColor) {
-          // Override the theme color with admin setting
-          rootElement.setAttribute('data-theme-color', data.themeColor);
-          console.log('Theme color loaded from admin settings:', data.themeColor);
-        }
-
-        if (customizeBtn) {
-          // Apply button color with gradient using setProperty to override !important
-          if (data.buttonColor) {
-            const color = data.buttonColor;
-            const gradient = `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`;
-            customizeBtn.style.setProperty('background', gradient, 'important');
-            console.log('Button color loaded from admin settings:', data.buttonColor);
-          }
-
-          // Apply button text
-          if (data.buttonText && buttonText) {
-            buttonText.textContent = data.buttonText;
-            console.log('Button text loaded from admin settings:', data.buttonText);
-          }
-
-          // Apply button logo or use palette emoji
-          if (buttonIcon) {
-            if (data.buttonLogoUrl) {
-              // Replace emoji with logo image
-              buttonIcon.innerHTML = `<img src="${data.buttonLogoUrl}" alt="Logo" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">`;
-              console.log('Button logo loaded from admin settings:', data.buttonLogoUrl);
-            } else {
-              // Use palette emoji as default
-              buttonIcon.textContent = '🎨';
-            }
-          }
-        }
-      })
-      .catch((error) => {
-        console.log('Using default colors from block settings');
-      });
-  })();
-</script>
-
-<!--
-  Note: Ensure your theme has this meta tag in the <head>:
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
--->
-
 <style>
-  /* iOS Safari pull-to-refresh root-level defense */
-  html,
-  body {
-    overscroll-behavior: none;
-  }
-
   .phone-case-customizer-wrapper {
     margin: 20px 0;
     position: relative;
@@ -311,56 +129,7 @@
     transform: translateY(0) !important;
   }
 
-  .phone-case-modal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 2147483647 !important;
-    transition: opacity 0.3s ease;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 0;
-    overflow-x: hidden;
-    background: rgba(0, 0, 0, 0.95) !important;
-    overscroll-behavior: contain;
-    /* touch-action is NOT set here — the document-level touchmove blocker
-       (window.__setModalOpen) handles scroll prevention unconditionally */
-  }
-
-  /* The React app root and its scrollable inner containers need pan-y
-     so that intentional vertical scrolling within the UI still works */
-  #phone-case-root {
-    touch-action: pan-y;
-  }
-
-  /* Explicitly scrollable containers inside the modal must allow pan-y */
-  #phone-case-root .upload-section,
-  #phone-case-root .upload-section-content,
-  #phone-case-root .assets-grid,
-  #phone-case-root .layers-list,
-  #phone-case-root .image-gallery,
-  #phone-case-root .text-edit-detail .detail-content {
-    touch-action: pan-y;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* The phone screen design area and all draggable elements must NOT allow
-     native touch scroll — JS drag handlers take full control here */
-  #phone-case-root .phone-screen,
-  #phone-case-root .phone-case,
-  #phone-case-root .phone-section {
-    touch-action: none;
-  }
-
-  /* Close button is now created by React component - no styles needed here */
-
-  /* No styles for #phone-case-root - let built CSS handle it like localhost */
-
-  /* Hide frame images from product page - only hide the image itself */
+  /* Hide frame images from product page */
   img[alt='frame' i],
   img[alt='Frame' i],
   img[alt='FRAME' i] {
@@ -369,151 +138,74 @@
 </style>
 
 <script>
-  // ============================================================
-  // NUCLEAR SCROLL LOCK — registered synchronously, before any
-  // other code, so this listener takes priority over every passive
-  // listener that React or the theme may register later.
-  // passive: false is REQUIRED for preventDefault() to work.
-  // ============================================================
+  // ── Variant data lookup (Liquid-rendered) ───────────────────────────────────
+  var __customizerVariants = {
+    {% for variant in product.variants %}
+      '{{ variant.id }}': {
+        id: '{{ variant.id }}',
+        {% if variant.featured_image %}
+          backgroundUrl: '{{ variant.featured_image | image_url: width: 600 }}',
+          productImageUrl: '{{ variant.featured_image | image_url: width: 600 }}'
+        {% elsif product.images.size > 0 %}
+          backgroundUrl: '{{ product.images[0] | image_url: width: 600 }}',
+          productImageUrl: '{{ product.images[0] | image_url: width: 600 }}'
+        {% else %}
+          backgroundUrl: '',
+          productImageUrl: ''
+        {% endif %}
+      }{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  };
+
+  // Current variant state — updated when the user changes variant on the product page
+  var __customizerCurrentVariant = {
+    id: '{{ product.selected_or_first_available_variant.id }}',
+    backgroundUrl: '{{ background_url }}',
+    productImageUrl: '{{ product_image_url }}'
+  };
+
   (function () {
-    var isModalOpen = false;
+    var overlay = document.getElementById('phone-case-iframe-overlay');
+    var iframe  = document.getElementById('phone-case-iframe');
+    var btn     = document.getElementById('customize-phone-case-btn');
 
-    // Block ALL touchmove events when modal is open.
-    // Registered before DOMContentLoaded so it runs before React mounts.
-    document.addEventListener(
-      'touchmove',
-      function (e) {
-        if (!isModalOpen) return;
-        e.preventDefault();
-      },
-      { passive: false }
-    );
+    if (!overlay || !iframe || !btn) return;
 
-    // Also block wheel events (desktop scroll wheel / trackpad)
-    document.addEventListener(
-      'wheel',
-      function (e) {
-        if (!isModalOpen) return;
-        e.preventDefault();
-      },
-      { passive: false }
-    );
+    var iframeLoaded = false;
 
-    // Expose flag setter globally so lockScroll / unlockScroll can toggle it
-    window.__setModalOpen = function (open) {
-      isModalOpen = open;
-    };
-  })();
-</script>
-
-<script>
-  // Remove frame images and their parent containers from product page
-  (function () {
-    let lastVariantId = null;
-
-    function hideFrameImages() {
-      // console.log('Searching for frame images to hide...');
-
-      // Check if variant changed by looking at URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const currentVariantId = urlParams.get('variant');
-
-      if (currentVariantId && currentVariantId !== lastVariantId) {
-        // console.log('Variant changed detected! Old:', lastVariantId, 'New:', currentVariantId);
-        lastVariantId = currentVariantId;
-
-        // Update the customizer root element with new variant
-        const rootElement = document.getElementById('phone-case-root');
-        if (rootElement) {
-          // Trigger variant update by directly calling the update function
-          const event = new CustomEvent('variant:change', {
-            detail: { variant: { id: currentVariantId } },
-          });
-          document.dispatchEvent(event);
-        }
-      }
-
-      // Find all product media containers (li elements)
-      const mediaContainers = document.querySelectorAll(
-        'li.product-media-container, li[class*="product-media"], li[class*="media"]'
-      );
-
-      // console.log('Found', mediaContainers.length, 'media containers');
-
-      mediaContainers.forEach((container) => {
-        // Check if this container has an image with alt="frame"
-        const img = container.querySelector('img');
-        if (img) {
-          const alt = img.getAttribute('alt');
-          if (alt && alt.toLowerCase() === 'frame') {
-            // console.log('Found frame image in container, hiding:', container);
-            container.style.display = 'none';
-            container.style.visibility = 'hidden';
-            container.style.opacity = '0';
-            container.style.height = '0';
-            container.style.width = '0';
-            container.style.overflow = 'hidden';
-            container.style.position = 'absolute';
-          }
-        }
+    // ── Build the iframe src URL ──────────────────────────────────────────────
+    function buildEmbedUrl(variantData) {
+      var base = window.location.origin + '/apps/customizer/embed';
+      var p = new URLSearchParams({
+        phoneCaseUrl:        variantData.backgroundUrl   || '',
+        productImageUrl:     variantData.productImageUrl || '',
+        productImageUrls:    '{{ product_image_urls }}',
+        variantId:           variantData.id              || '',
+        designsUrl:          '{{ 'pre-design-images.json' | asset_url }}',
+        themeColor:          '{{ block.settings.theme_color | default: '#00a8e8' }}',
+        productPrice:        '{{ product.selected_or_first_available_variant.price | money }}',
+        productComparePrice: '{{ product.selected_or_first_available_variant.compare_at_price | money }}',
+        customFrameUrl:      '{{ custom_frame_url }}',
+        hasCustomFrame:      '{{ has_custom_frame }}'
       });
+      return base + '?' + p.toString();
     }
 
-    // Run on page load
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', hideFrameImages);
-    } else {
-      hideFrameImages();
-    }
+    // ── Scroll lock (parent page) ─────────────────────────────────────────────
+    // When the iframe overlay is visible the parent page must not scroll or PTR.
+    // We still lock the parent page even though PTR is now handled inside the
+    // iframe, because the parent page can still scroll behind the overlay on
+    // some browsers if not locked.
+    function lockParentScroll() {
+      document.documentElement.style.touchAction = 'none';
+      document.documentElement.style.overscrollBehavior = 'none';
 
-    // Run again after delays to catch dynamically loaded images
-    setTimeout(hideFrameImages, 100);
-    setTimeout(hideFrameImages, 500);
-    setTimeout(hideFrameImages, 1000);
-    setTimeout(hideFrameImages, 2000);
-
-    // Watch for DOM changes
-    const observer = new MutationObserver(function (mutations) {
-      hideFrameImages();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['alt'],
-    });
-  })();
-</script>
-
-<script>
-  (function () {
-    const modal = document.getElementById('phone-case-modal');
-    const btn = document.getElementById('customize-phone-case-btn');
-
-    if (!modal || !btn) {
-      console.error('Modal or button not found:', { modal, btn });
-      return;
-    }
-
-    let reactMounted = false;
-    let modalMovedToBody = false;
-
-    // Move modal to body on first open to escape theme container
-    function ensureModalInBody() {
-      if (!modalMovedToBody && modal && modal.parentElement !== document.body) {
-        document.body.appendChild(modal);
-        modalMovedToBody = true;
+      var mainContent = document.getElementById('MainContent');
+      if (mainContent) {
+        mainContent.style.overscrollBehavior = 'none';
+        mainContent.style.touchAction = 'none';
       }
-    }
 
-    // Scroll-lock helpers — single source of truth for lock/unlock state.
-    // Uses position:fixed + top:-scrollY for cross-browser / iOS Safari support.
-    // The unconditional touchmove/wheel blocker is registered in the IIFE above
-    // (before this DOMContentLoaded block) and controlled via window.__setModalOpen.
-
-    function lockScroll() {
-      window.__setModalOpen(true);
       var scrollY = window.scrollY;
       document.body.dataset.scrollY = scrollY;
       document.body.style.position = 'fixed';
@@ -521,8 +213,16 @@
       document.body.style.width = '100%';
     }
 
-    function unlockScroll() {
-      window.__setModalOpen(false);
+    function unlockParentScroll() {
+      document.documentElement.style.touchAction = '';
+      document.documentElement.style.overscrollBehavior = '';
+
+      var mainContent = document.getElementById('MainContent');
+      if (mainContent) {
+        mainContent.style.overscrollBehavior = '';
+        mainContent.style.touchAction = '';
+      }
+
       var scrollY = parseInt(document.body.dataset.scrollY || '0', 10);
       document.body.style.position = '';
       document.body.style.top = '';
@@ -531,134 +231,208 @@
       window.scrollTo(0, scrollY);
     }
 
-    // Open modal
-    btn.addEventListener('click', function () {
-      console.log('Customize button clicked');
-      ensureModalInBody();
-      modal.style.visibility = 'visible';
-      modal.style.opacity = '1';
-      lockScroll();
-
-      // Mount React app on first open
-      if (!reactMounted && window.React && window.ReactDOM) {
-        reactMounted = true;
-        // The phone-customizer.js will auto-mount when the element is visible
+    // ── Open / close ──────────────────────────────────────────────────────────
+    function openCustomizer() {
+      // Lazy-load the iframe on first open
+      if (!iframeLoaded) {
+        iframe.src = buildEmbedUrl(__customizerCurrentVariant);
+        iframeLoaded = true;
       }
-    });
-
-    // Close modal function (called by backdrop click)
-    function closeModal() {
-      modal.style.visibility = 'hidden';
-      modal.style.opacity = '0';
-      unlockScroll();
-      // Unmount React app
-      const root = document.getElementById('phone-case-root');
-      if (root && window.ReactDOM) {
-        window.ReactDOM.unmountComponentAtNode(root);
-      }
+      overlay.style.display = 'block';
+      lockParentScroll();
     }
 
-    // Close button is now handled by React component
-    // Clicking outside the content area closes modal
-    modal.addEventListener('click', function (e) {
-      if (e.target === modal) {
-        closeModal();
+    function closeCustomizer() {
+      overlay.style.display = 'none';
+      unlockParentScroll();
+    }
+
+    btn.addEventListener('click', openCustomizer);
+
+    // ── postMessage: receive messages FROM the iframe ─────────────────────────
+    window.addEventListener('message', function (e) {
+      if (!e.data || typeof e.data.type !== 'string') return;
+
+      if (e.data.type === 'customizer:close') {
+        closeCustomizer();
+      }
+
+      if (e.data.type === 'customizer:addToCart') {
+        handleAddToCart(e.data.detail);
       }
     });
 
-    // Handle Add to Cart from customizer
-    window.addEventListener('customizer:addToCart', async function (e) {
-      const { designId, imageUrl, emptyCaseUrl, designOnlyUrl, elementUrls } = e.detail;
+    // ── Add to Cart (runs on the parent page — same origin as Shopify) ────────
+    async function handleAddToCart(detail) {
+      var designId      = detail.designId;
+      var imageUrl      = detail.imageUrl;
+      var emptyCaseUrl  = detail.emptyCaseUrl;
+      var designOnlyUrl = detail.designOnlyUrl;
+      var elementUrls   = detail.elementUrls || [];
+      var variantId     = __customizerCurrentVariant.id
+                          || '{{ product.selected_or_first_available_variant.id }}';
 
-      console.log('Add to cart event received:', { designId, imageUrl, emptyCaseUrl, designOnlyUrl, elementUrls });
-
-      // Get the current variant ID from the root element (updated by variant change listener)
-      const rootElement = document.getElementById('phone-case-root');
-      const variantId = rootElement
-        ? rootElement.getAttribute('data-variant-id')
-        : '{{ product.selected_or_first_available_variant.id }}';
-
-      console.log('Variant ID:', variantId);
-
-      if (!variantId || variantId === '') {
+      if (!variantId) {
         alert('Please select a product variant first.');
         return;
       }
 
-      // Build cart properties with element URLs
-      const properties = {
-        _design_id: designId,
-        _main: imageUrl,
-        _image1: emptyCaseUrl,
+      var properties = {
+        _design_id:     designId,
+        _main:          imageUrl,
+        _image1:        emptyCaseUrl,
         '_print-image': designOnlyUrl,
-        Düzenlendi: 'Evet',
-        Tasarım: imageUrl, // Visible property showing the complete design URL
+        'Düzenlendi':   'Evet',
+        'Tasarım':      imageUrl
       };
 
-      // Add element URLs to properties
-      if (elementUrls && elementUrls.length > 0) {
-        elementUrls.forEach((url, index) => {
-          properties[`_element${index + 1}`] = url;
-        });
-        console.log(`Added ${elementUrls.length} element URLs to cart properties`);
-      }
+      elementUrls.forEach(function (url, index) {
+        properties['_element' + (index + 1)] = url;
+      });
 
-      // Add to Shopify cart
-      const formData = {
-        items: [
-          {
-            id: variantId,
-            quantity: 1,
-            properties: properties,
-            // Set the custom image as the line item image
-            image: imageUrl,
-          },
-        ],
+      var formData = {
+        items: [{
+          id:         variantId,
+          quantity:   1,
+          properties: properties,
+          image:      imageUrl
+        }]
       };
-
-      console.log('Cart add request:', formData);
 
       try {
-        const response = await fetch('/cart/add.js', {
-          method: 'POST',
+        var response = await fetch('/cart/add.js', {
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
+          body:    JSON.stringify(formData)
         });
 
-        console.log('Cart add response status:', response.status);
-
         if (response.ok) {
-          const data = await response.json();
-          console.log('Cart add success:', data);
-
-          closeModal();
-
-          // Redirect to cart page
+          closeCustomizer();
           window.location.href = '/cart';
         } else {
-          const error = await response.json();
-          console.error('Cart add error:', error);
+          var error = await response.json();
           alert('Failed to add to cart: ' + (error.description || error.message || 'Unknown error'));
         }
-      } catch (error) {
-        console.error('Failed to add to cart:', error);
+      } catch (err) {
+        console.error('Failed to add to cart:', err);
         alert('Failed to add to cart. Please try again.');
       }
+    }
+
+    // ── Variant change: forward to iframe via postMessage ─────────────────────
+    function notifyIframeVariantChanged(variantData) {
+      __customizerCurrentVariant = variantData;
+      if (iframeLoaded && iframe.contentWindow) {
+        iframe.contentWindow.postMessage(
+          { type: 'customizer:variantChanged', detail: variantData },
+          '*'
+        );
+      }
+    }
+
+    // Listen for Shopify theme variant change events
+    document.addEventListener('variant:change', function (event) {
+      if (event.detail && event.detail.variant && event.detail.variant.id) {
+        var vd = __customizerVariants[event.detail.variant.id.toString()];
+        if (vd) notifyIframeVariantChanged(vd);
+      }
+    });
+
+    // Variant selector (select / hidden input)
+    document.querySelectorAll('select[name="id"], input[name="id"]').forEach(function (el) {
+      el.addEventListener('change', function (e) {
+        var vd = __customizerVariants[e.target.value];
+        if (vd) notifyIframeVariantChanged(vd);
+      });
+    });
+
+    // Radio buttons (modern themes)
+    document.querySelectorAll('input[type="radio"][name*="option"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        setTimeout(function () {
+          var sel = document.querySelector('input[name="id"]:checked, select[name="id"]');
+          if (sel) {
+            var vid = sel.value || (sel.options && sel.options[sel.selectedIndex].value);
+            var vd = __customizerVariants[vid];
+            if (vd) notifyIframeVariantChanged(vd);
+          }
+        }, 50);
+      });
     });
   })();
 </script>
 
-<!-- Load Google Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link
-  href="https://fonts.googleapis.com/css2?family=Anton&family=Bangers&family=Cinzel:wght@400;700&family=Comforter+Brush&family=Dancing+Script:wght@400;700&family=Fuggles&family=Great+Vibes&family=Leckerli+One&family=Luckiest+Guy&family=Montserrat:wght@400;700&family=Noto+Serif:wght@400;700&family=Pacifico&family=Poppins:wght@400;700&family=Roboto:wght@400;700&family=Sacramento&family=Source+Code+Pro:wght@400;700&family=Ubuntu+Mono:wght@400;700&display=swap"
-  rel="stylesheet"
->
+<script>
+  // ── Button appearance from admin settings ───────────────────────────────────
+  (function () {
+    var customizeBtn = document.getElementById('customize-phone-case-btn');
+    var buttonIcon = document.getElementById('button-icon');
+    var buttonText = document.getElementById('button-text');
 
-<!-- Load React app directly from theme extension assets -->
-<link rel="stylesheet" href="{{ 'phone-case-customizer.css' | asset_url }}?v=291">
-<script src="{{ 'phone-case-customizer.js' | asset_url }}?v=291" defer></script>
+    fetch(window.location.origin + '/apps/customizer/get-settings')
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        if (customizeBtn && data.buttonColor) {
+          var c = data.buttonColor;
+          customizeBtn.style.setProperty(
+            'background',
+            'linear-gradient(135deg, ' + c + ' 0%, ' + c + 'dd 100%)',
+            'important'
+          );
+        }
+        if (buttonText && data.buttonText) {
+          buttonText.textContent = data.buttonText;
+        }
+        if (buttonIcon) {
+          if (data.buttonLogoUrl) {
+            buttonIcon.innerHTML =
+              '<img src="' +
+              data.buttonLogoUrl +
+              '" alt="Logo" ' +
+              'style="width:20px;height:20px;object-fit:contain;vertical-align:middle;">';
+          } else {
+            buttonIcon.textContent = '🎨';
+          }
+        }
+      })
+      .catch(function () {});
+  })();
+</script>
+
+<script>
+  // ── Hide "frame" product images from the storefront gallery ────────────────
+  (function () {
+    function hideFrameImages() {
+      document
+        .querySelectorAll('li.product-media-container, li[class*="product-media"], li[class*="media"]')
+        .forEach(function (container) {
+          var img = container.querySelector('img');
+          if (img && img.getAttribute('alt') && img.getAttribute('alt').toLowerCase() === 'frame') {
+            container.style.cssText =
+              'display:none!important;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;position:absolute;';
+          }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hideFrameImages);
+    } else {
+      hideFrameImages();
+    }
+    [100, 500, 1000, 2000].forEach(function (t) {
+      setTimeout(hideFrameImages, t);
+    });
+
+    new MutationObserver(hideFrameImages).observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['alt'],
+    });
+  })();
+</script>
 
 {% schema %}
 {

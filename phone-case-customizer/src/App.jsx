@@ -122,27 +122,33 @@ function App() {
     }
   }, [themeColor]);
 
-  // ─── MODAL-ELEMENT LEVEL SCROLL BLOCKER ────────────────────────────────────
-  // Attach non-passive touchmove + touchstart listeners directly to the modal
-  // DOM node. Element-level listeners fire BEFORE document-level ones, so
-  // preventDefault() is guaranteed to work even if the theme registered a
-  // passive document listener earlier. This is the last line of defense against
-  // iOS pull-to-refresh and background page scroll.
+  // ─── PTR PREVENTION (iframe edition) ───────────────────────────────────────
+  // The app now runs inside an <iframe> with its own isolated document.
+  // The iframe's embed page (apps.customizer.embed.tsx) already sets:
+  //   html, body { overscroll-behavior: none; touch-action: none }
+  // in its <style> block, which is the correct and sufficient fix.
+  //
+  // This useEffect adds a belt-and-suspenders non-passive touchmove blocker
+  // directly on the document, covering any edge case where the CSS alone is
+  // not enough (e.g. older Android WebView).
   useEffect(() => {
-    const modal = document.getElementById("phone-case-modal");
-    if (!modal) return;
+    // Ensure the iframe document itself cannot PTR
+    document.documentElement.style.overscrollBehavior = "none";
+    document.documentElement.style.touchAction = "none";
+    document.body.style.overscrollBehavior = "none";
+    document.body.style.touchAction = "none";
 
-    const blockTouch = (e) => {
-      e.preventDefault();
+    const blockPTR = (e) => {
+      // Block multi-touch and downward single-touch (PTR gesture)
+      if (e.touches.length > 1 || e.touches[0].clientY > 0) {
+        e.preventDefault();
+      }
     };
 
-    // passive: false is mandatory for preventDefault() to be honoured
-    modal.addEventListener("touchmove", blockTouch, { passive: false });
-    modal.addEventListener("touchstart", blockTouch, { passive: false });
+    document.addEventListener("touchmove", blockPTR, { passive: false });
 
     return () => {
-      modal.removeEventListener("touchmove", blockTouch);
-      modal.removeEventListener("touchstart", blockTouch);
+      document.removeEventListener("touchmove", blockPTR);
     };
   }, []);
   // ────────────────────────────────────────────────────────────────────────────
@@ -2780,17 +2786,29 @@ function App() {
       const { designId, imageUrl, emptyCaseUrl, designOnlyUrl, elementUrls } =
         await saveDesignToBackend(designData);
 
-      // Dispatch custom event for the theme extension to handle cart add
-      const event = new CustomEvent("customizer:addToCart", {
-        detail: {
-          designId,
-          imageUrl,
-          emptyCaseUrl,
-          designOnlyUrl,
-          elementUrls,
-        },
-      });
-      window.dispatchEvent(event);
+      // Send to parent page via postMessage (iframe mode).
+      // The parent Liquid script listens for this message and calls /cart/add.js.
+      // We also dispatch the legacy window event as a fallback for non-iframe usage.
+      const detail = {
+        designId,
+        imageUrl,
+        emptyCaseUrl,
+        designOnlyUrl,
+        elementUrls,
+      };
+
+      // postMessage to parent (iframe)
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          { type: "customizer:addToCart", detail },
+          "*",
+        );
+      } else {
+        // Fallback: legacy window event (non-iframe / local dev)
+        window.dispatchEvent(
+          new CustomEvent("customizer:addToCart", { detail }),
+        );
+      }
     } catch (error) {
       console.error("Failed to add to cart:", error);
       alert("Sepete eklenirken bir hata oluştu. Lütfen tekrar deneyin.");
@@ -3419,11 +3437,17 @@ function App() {
           <button
             className="modal-close-button"
             onClick={() => {
-              const modal = document.getElementById("phone-case-modal");
-              if (modal) {
-                modal.style.visibility = "hidden";
-                modal.style.opacity = "0";
-                document.body.style.overflow = "";
+              // iframe mode: notify parent page to close the overlay
+              if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: "customizer:close" }, "*");
+              } else {
+                // Fallback for non-iframe / local dev: hide the modal directly
+                const modal = document.getElementById("phone-case-modal");
+                if (modal) {
+                  modal.style.visibility = "hidden";
+                  modal.style.opacity = "0";
+                  document.body.style.overflow = "";
+                }
               }
             }}
             aria-label="Close customizer"
