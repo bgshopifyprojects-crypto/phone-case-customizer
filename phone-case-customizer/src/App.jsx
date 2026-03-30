@@ -122,51 +122,6 @@ function App() {
     }
   }, [themeColor]);
 
-  // ─── MODAL-AWARE PULL-TO-REFRESH PREVENTION ────────────────────────────────
-  // Watches #phone-case-modal's inline style via MutationObserver. When the
-  // modal becomes visible (visibility === "visible"), adds .customizer-open to
-  // <body>. The class is removed the moment the modal is hidden again.
-  // CSS rule `body.customizer-open { overscroll-behavior: none; }` in index.css
-  // handles pull-to-refresh prevention without JS touch listeners.
-  useEffect(() => {
-    const modal = document.getElementById("phone-case-modal");
-    if (!modal) return;
-
-    let cleanupActive = false;
-
-    const activate = () => {
-      if (cleanupActive) return;
-      cleanupActive = true;
-      document.body.classList.add("customizer-open");
-    };
-
-    const deactivate = () => {
-      if (!cleanupActive) return;
-      cleanupActive = false;
-      document.body.classList.remove("customizer-open");
-    };
-
-    // Sync with current visibility on mount (modal may already be open)
-    if (modal.style.visibility === "visible") {
-      activate();
-    }
-
-    const observer = new MutationObserver(() => {
-      if (modal.style.visibility === "visible") {
-        activate();
-      } else {
-        deactivate();
-      }
-    });
-
-    observer.observe(modal, { attributes: true, attributeFilter: ["style"] });
-
-    return () => {
-      observer.disconnect();
-      deactivate();
-    };
-  }, []);
-
   // ─── MODAL-ELEMENT LEVEL SCROLL BLOCKER ────────────────────────────────────
   // Attach non-passive touchmove + touchstart listeners directly to the modal
   // DOM node. Element-level listeners fire BEFORE document-level ones, so
@@ -3048,7 +3003,7 @@ function App() {
   return (
     <div
       className="phone-case-modal"
-      id="phone-case-customizer-network-effect-4"
+      id="phone-case-customizer-network-effect-1"
     >
       {/* Loading Overlay */}
       {isCapturing && (
