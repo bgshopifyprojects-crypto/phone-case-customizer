@@ -123,24 +123,56 @@ function App() {
   }, [themeColor]);
 
   // ─── MODAL-AWARE PULL-TO-REFRESH PREVENTION ────────────────────────────────
-  // Active only while this component is mounted (i.e. the customizer is open).
-  // Adds .customizer-open to <body> so the scoped CSS rule in index.css can
-  // suppress overscroll-behavior, and registers a non-passive touchstart
-  // listener on window to call preventDefault() when the page is at the top.
-  // Both are cleaned up on unmount so the rest of the storefront is unaffected.
+  // Watches #phone-case-modal's inline style via MutationObserver. When the
+  // modal becomes visible (visibility === "visible"), adds .customizer-open to
+  // <body> and registers a non-passive touchstart listener to block iOS
+  // pull-to-refresh. Both are removed the moment the modal is hidden again.
+  // This is necessary because the React app is always mounted as an embedded
+  // widget — useEffect([]) would fire on page load before the modal is opened.
   useEffect(() => {
+    const modal = document.getElementById("phone-case-modal");
+    if (!modal) return;
+
+    let cleanupActive = false;
+
     const preventRefresh = (e) => {
       if (window.scrollY === 0) {
         e.preventDefault();
       }
     };
 
-    document.body.classList.add("customizer-open");
-    window.addEventListener("touchstart", preventRefresh, { passive: false });
+    const activate = () => {
+      if (cleanupActive) return;
+      cleanupActive = true;
+      document.body.classList.add("customizer-open");
+      window.addEventListener("touchstart", preventRefresh, { passive: false });
+    };
 
-    return () => {
+    const deactivate = () => {
+      if (!cleanupActive) return;
+      cleanupActive = false;
       document.body.classList.remove("customizer-open");
       window.removeEventListener("touchstart", preventRefresh);
+    };
+
+    // Sync with current visibility on mount (modal may already be open)
+    if (modal.style.visibility === "visible") {
+      activate();
+    }
+
+    const observer = new MutationObserver(() => {
+      if (modal.style.visibility === "visible") {
+        activate();
+      } else {
+        deactivate();
+      }
+    });
+
+    observer.observe(modal, { attributes: true, attributeFilter: ["style"] });
+
+    return () => {
+      observer.disconnect();
+      deactivate();
     };
   }, []);
 
@@ -3025,7 +3057,7 @@ function App() {
   return (
     <div
       className="phone-case-modal"
-      id="phone-case-customizer-network-effect-2"
+      id="phone-case-customizer-network-effect-3"
     >
       {/* Loading Overlay */}
       {isCapturing && (
