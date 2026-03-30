@@ -122,6 +122,28 @@ function App() {
     }
   }, [themeColor]);
 
+  // ─── MODAL-AWARE PULL-TO-REFRESH PREVENTION ────────────────────────────────
+  // Active only while this component is mounted (i.e. the customizer is open).
+  // Adds .customizer-open to <body> so the scoped CSS rule in index.css can
+  // suppress overscroll-behavior, and registers a non-passive touchstart
+  // listener on window to call preventDefault() when the page is at the top.
+  // Both are cleaned up on unmount so the rest of the storefront is unaffected.
+  useEffect(() => {
+    const preventRefresh = (e) => {
+      if (window.scrollY === 0) {
+        e.preventDefault();
+      }
+    };
+
+    document.body.classList.add("customizer-open");
+    window.addEventListener("touchstart", preventRefresh, { passive: false });
+
+    return () => {
+      document.body.classList.remove("customizer-open");
+      window.removeEventListener("touchstart", preventRefresh);
+    };
+  }, []);
+
   // ─── MODAL-ELEMENT LEVEL SCROLL BLOCKER ────────────────────────────────────
   // Attach non-passive touchmove + touchstart listeners directly to the modal
   // DOM node. Element-level listeners fire BEFORE document-level ones, so

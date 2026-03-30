@@ -1,6 +1,7 @@
 /* ── Pull-to-Refresh prevention ─────────────────────────────────────────── */
-html,
-body {
+/* Only suppress overscroll while the customizer modal is open.
+   The .customizer-open class is added/removed by App.jsx via useEffect. */
+body.customizer-open {
   overscroll-behavior: none;
 }
 
