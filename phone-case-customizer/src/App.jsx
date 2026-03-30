@@ -125,43 +125,25 @@ function App() {
   // ─── MODAL-AWARE PULL-TO-REFRESH PREVENTION ────────────────────────────────
   // Watches #phone-case-modal's inline style via MutationObserver. When the
   // modal becomes visible (visibility === "visible"), adds .customizer-open to
-  // <body> and registers a non-passive touchstart listener to block iOS
-  // pull-to-refresh. Both are removed the moment the modal is hidden again.
-  // This is necessary because the React app is always mounted as an embedded
-  // widget — useEffect([]) would fire on page load before the modal is opened.
+  // <body>. The class is removed the moment the modal is hidden again.
+  // CSS rule `body.customizer-open { overscroll-behavior: none; }` in index.css
+  // handles pull-to-refresh prevention without JS touch listeners.
   useEffect(() => {
     const modal = document.getElementById("phone-case-modal");
     if (!modal) return;
 
     let cleanupActive = false;
-    let startY = 0;
-
-    const recordStart = (e) => {
-      startY = e.touches[0].clientY;
-    };
-
-    const preventRefresh = (e) => {
-      const currentY = e.touches[0].clientY;
-      const movingDown = currentY > startY;
-      if (window.scrollY === 0 && movingDown) {
-        e.preventDefault();
-      }
-    };
 
     const activate = () => {
       if (cleanupActive) return;
       cleanupActive = true;
       document.body.classList.add("customizer-open");
-      window.addEventListener("touchstart", recordStart, { passive: true });
-      window.addEventListener("touchmove", preventRefresh, { passive: false });
     };
 
     const deactivate = () => {
       if (!cleanupActive) return;
       cleanupActive = false;
       document.body.classList.remove("customizer-open");
-      window.removeEventListener("touchstart", recordStart);
-      window.removeEventListener("touchmove", preventRefresh);
     };
 
     // Sync with current visibility on mount (modal may already be open)
@@ -3066,7 +3048,7 @@ function App() {
   return (
     <div
       className="phone-case-modal"
-      id="phone-case-customizer-network-effect-3"
+      id="phone-case-customizer-network-effect-4"
     >
       {/* Loading Overlay */}
       {isCapturing && (
