@@ -5,9 +5,6 @@ body.customizer-open {
   overscroll-behavior: none;
 }
 
-canvas {
-  touch-action: none;
-}
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {

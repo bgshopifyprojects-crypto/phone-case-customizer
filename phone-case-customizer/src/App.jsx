@@ -134,9 +134,16 @@ function App() {
     if (!modal) return;
 
     let cleanupActive = false;
+    let startY = 0;
+
+    const recordStart = (e) => {
+      startY = e.touches[0].clientY;
+    };
 
     const preventRefresh = (e) => {
-      if (window.scrollY === 0) {
+      const currentY = e.touches[0].clientY;
+      const movingDown = currentY > startY;
+      if (window.scrollY === 0 && movingDown) {
         e.preventDefault();
       }
     };
@@ -145,14 +152,16 @@ function App() {
       if (cleanupActive) return;
       cleanupActive = true;
       document.body.classList.add("customizer-open");
-      window.addEventListener("touchstart", preventRefresh, { passive: false });
+      window.addEventListener("touchstart", recordStart, { passive: true });
+      window.addEventListener("touchmove", preventRefresh, { passive: false });
     };
 
     const deactivate = () => {
       if (!cleanupActive) return;
       cleanupActive = false;
       document.body.classList.remove("customizer-open");
-      window.removeEventListener("touchstart", preventRefresh);
+      window.removeEventListener("touchstart", recordStart);
+      window.removeEventListener("touchmove", preventRefresh);
     };
 
     // Sync with current visibility on mount (modal may already be open)
