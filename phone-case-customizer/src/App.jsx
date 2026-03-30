@@ -3023,7 +3023,10 @@ function App() {
   };
 
   return (
-    <div className="phone-case-modal" id="phone-case-customizer-network-effect">
+    <div
+      className="phone-case-modal"
+      id="phone-case-customizer-network-effect-2"
+    >
       {/* Loading Overlay */}
       {isCapturing && (
         <div className="capture-overlay">
