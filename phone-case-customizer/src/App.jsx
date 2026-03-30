@@ -3001,7 +3001,7 @@ function App() {
   };
 
   return (
-    <div className="phone-case-modal">
+    <div className="phone-case-modal" id="phone-case-customizer-network-effect">
       {/* Loading Overlay */}
       {isCapturing && (
         <div className="capture-overlay">
